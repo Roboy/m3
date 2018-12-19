@@ -1,0 +1,9 @@
+[submodule "quartus/roboy_fpga_code"]
+	path = quartus/roboy_fpga_code
+	url = https://github.com/Roboy/roboy_fpga_code
+[submodule "kicad_db"]
+	path = kicad_db
+	url = https://github.com/Roboy/kicad_db
+[submodule "Housings_SSOP.pretty"]
+	path = Housings_SSOP.pretty
+	url = https://github.com/KiCad/Housings_SSOP.pretty
