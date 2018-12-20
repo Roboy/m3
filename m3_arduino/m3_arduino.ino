@@ -14,8 +14,8 @@
 #define SPINDLE_RADIUS 0.0057
 WiFiUDP Udp;
 unsigned int localUdpPort = 8000;
-IPAddress remoteIP(192,168,255,255);
-    int remote_port = 8002;
+IPAddress remoteIP(255,255,255,255);
+int remote_port = 8002;
 char incomingPacket[255];
 const char* ssid = "roboy";
 const char* passwd = "wiihackroboy";
@@ -28,12 +28,15 @@ class M3{
     servo.attach(servoPin);
   }
   void update(){
+    static int counter = 0;
     float val = a1335.readAngle();
-    if(angle>320.0 && val<40.0){
-      rev_counter++;
-    }
-    if(angle<40.0 && val>320.0){
-      rev_counter--;
+    if(counter++%2==0){
+      if(angle>300.0 && val<60.0){
+        rev_counter++;
+      }
+      if(angle<60.0 && val>300.0){
+        rev_counter--;
+      }
     }
     angle = val;
     angleAbsolute = rev_counter*360.0 + angle;
@@ -44,7 +47,19 @@ class M3{
   void controlPosition(){
     static float angle_prev = 0, error_prev = 0;
     float error = (target_pos-angleAbsolute);
-    float control = Kp*error + Kd*(error_prev-error);
+    float control = Kp*error + Kd*(error-error_prev);
+    if(control>20){
+      control = 20;
+    }else if(control < -20){
+      control = -20;
+    }
+    pwmRef = 90 + control;
+    servo.write(pwmRef);
+  }
+  void controlForce(){
+    static float force_prev = 0, error_prev = 0;
+    float error = (target_force-force);
+    float control = Kp*error + Kd*(error-error_prev);
     if(control>20){
       control = 20;
     }else if(control < -20){
@@ -103,12 +118,13 @@ class M3{
     int rev_counter = 0;
     float displacement = 0;
     float force = 0, target_force = 0, target_pos = 0;
-    float Kp = 0.5, Kd = 0;
+    float Kp = 0.1, Kd = 0.05;
     Servo servo;
     A1335 a1335;
     int analogPin, servoPin;
     const float springConstant = 5.241;
     uint8_t buf[12];
+    int control_mode = 0;
 //    AsyncUDP udp;
 };
 
@@ -143,20 +159,41 @@ void setup() {
   
 }
 
+int counter = 0;
+
 // the loop routine runs over and over again forever:
 void loop() {
   int packetSize = Udp.parsePacket();
-  if (packetSize == 4)
+  if (packetSize == 5)
   {
 //    Serial.printf("Received %d bytes from %s, port %d\n", packetSize, Udp.remoteIP().toString().c_str(), Udp.remotePort());
     int32_t data;
     int len = Udp.read(incomingPacket, 255);
     memcpy(&data,incomingPacket,4);
-    m3.target_pos = unpack754_32(data);
-    Serial.printf("target_pos: %f\n", m3.target_pos);
+    m3.control_mode = incomingPacket[4];
+    switch(m3.control_mode){
+      case 0:
+        m3.target_pos = unpack754_32(data);
+        Serial.printf("target_pos: %f, control_mode %d\n", m3.target_pos, m3.control_mode);
+        break;
+      case 1:
+        m3.target_force = unpack754_32(data);
+        Serial.printf("target_force: %f, control_mode %d\n", m3.target_force, m3.control_mode);
+        break;
+    }
   }
   m3.update();
-  m3.controlPosition();
-  m3.printStatus();
-  m3.broadCastStatus();
+  switch(m3.control_mode){
+    case 0:
+      m3.controlPosition();
+      break;
+    case 1:
+      m3.controlForce();
+      break;
+  }
+//  m3.printStatus();
+  if(counter++%10==0){
+    m3.broadCastStatus();
+  }
+  delay(5);
 }
