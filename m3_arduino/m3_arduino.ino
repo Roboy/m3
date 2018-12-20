@@ -15,7 +15,7 @@
 WiFiUDP Udp;
 unsigned int localUdpPort = 8000;
 IPAddress remoteIP(192,168,255,255);
-    int remote_port = 8001;
+    int remote_port = 8002;
 char incomingPacket[255];
 const char* ssid = "roboy";
 const char* passwd = "wiihackroboy";
@@ -159,5 +159,4 @@ void loop() {
   m3.controlPosition();
   m3.printStatus();
   m3.broadCastStatus();
-  delay(15);
 }
