@@ -75,8 +75,6 @@ Text GLabel 1625 4250 0    50   Input ~ 0
 GND
 Wire Wire Line
 	1625 4250 1725 4250
-Text GLabel 4650 1925 2    50   Input ~ 0
-SPI_CSO
 Wire Wire Line
 	1475 4050 1225 4050
 $Comp
@@ -550,31 +548,12 @@ NoConn ~ 3550 2875
 NoConn ~ 3700 2875
 Text GLabel 4650 1725 2    50   Input ~ 0
 GPIO0
-$Comp
-L roboy_sno-rescue:ESP8266-ESP-12E-roboy_sno U?
-U 1 1 5C1B43F0
-P 3350 1925
-AR Path="/5ABCD2F9/5C1B43F0" Ref="U?"  Part="1" 
-AR Path="/5C1B43F0" Ref="U2"  Part="1" 
-F 0 "U2" H 3450 3252 60  0000 C CNN
-F 1 "ESP8266-ESP-12E" H 3450 3146 60  0000 C CNN
-F 2 "roboy_sno:ESP-12E_SMD" H 2650 1875 60  0001 C CNN
-F 3 "" H 2650 1875 60  0000 C CNN
-	1    3350 1925
-	1    0    0    -1  
-$EndComp
 NoConn ~ 5700 2275
 NoConn ~ 5700 2375
 Wire Wire Line
 	4650 1525 4775 1525
 Wire Wire Line
 	4650 1625 4775 1625
-Text GLabel 4650 2125 2    50   Input ~ 0
-SPI_MISO
-Text GLabel 4650 2025 2    50   Input ~ 0
-SPI_MOSI
-Text GLabel 4650 2225 2    50   Input ~ 0
-SPI_CLK
 Text GLabel 2625 4250 2    50   Input ~ 0
 PWRGOOD
 Text GLabel 4650 2325 2    50   Input ~ 0
@@ -598,9 +577,7 @@ GND
 Text GLabel 5500 4200 1    50   Input ~ 0
 VDD5V
 NoConn ~ 5800 4500
-Text GLabel 4775 1525 2    50   Input ~ 0
-NEOPX
-Text GLabel 4775 1625 2    50   Input ~ 0
+Text GLabel 4650 2125 2    50   Input ~ 0
 PWM
 Text GLabel 5200 4500 0    50   Input ~ 0
 NEOPX
@@ -670,7 +647,7 @@ L Device:C C8
 U 1 1 5C1B1BC5
 P 7550 5400
 F 0 "C8" H 7665 5446 50  0000 L CNN
-F 1 "C" H 7665 5355 50  0000 L CNN
+F 1 "0.1u" H 7665 5355 50  0000 L CNN
 F 2 "Capacitors_SMD:C_0402" H 7588 5250 50  0001 C CNN
 F 3 "~" H 7550 5400 50  0001 C CNN
 	1    7550 5400
@@ -684,7 +661,7 @@ L Device:C C7
 U 1 1 5C1B1C7F
 P 7550 4800
 F 0 "C7" H 7665 4846 50  0000 L CNN
-F 1 "C" H 7665 4755 50  0000 L CNN
+F 1 "0.1u" H 7665 4755 50  0000 L CNN
 F 2 "Capacitors_SMD:C_0402" H 7588 4650 50  0001 C CNN
 F 3 "~" H 7550 4800 50  0001 C CNN
 	1    7550 4800
@@ -709,14 +686,10 @@ Wire Wire Line
 	8100 4650 7550 4650
 Text GLabel 7550 4950 0    50   Input ~ 0
 GND
-Text GLabel 9600 4650 2    50   Input ~ 0
-SPI_CSO
-Text GLabel 9600 5250 2    50   Input ~ 0
-SPI_MISO
-Text GLabel 9600 4850 2    50   Input ~ 0
-SPI_MOSI
-Text GLabel 9600 5050 2    50   Input ~ 0
-SPI_CLK
+Text GLabel 10125 5250 2    50   Input ~ 0
+SDA
+Text GLabel 10125 5050 2    50   Input ~ 0
+SCL
 NoConn ~ 9600 5450
 $Comp
 L Connector_Generic:Conn_01x03 J2
@@ -780,4 +753,78 @@ Wire Wire Line
 	2050 1525 1375 1525
 Wire Wire Line
 	1375 1525 1375 2075
+Text GLabel 9800 4600 1    50   Input ~ 0
+GND
+Wire Wire Line
+	9600 4650 9800 4650
+Wire Wire Line
+	9800 4650 9800 4600
+Wire Wire Line
+	9800 4650 9800 4850
+Wire Wire Line
+	9800 4850 9600 4850
+Connection ~ 9800 4650
+Wire Wire Line
+	9600 5050 10050 5050
+Wire Wire Line
+	10125 5250 10050 5250
+Text GLabel 10425 5550 2    50   Input ~ 0
+3.3V
+$Comp
+L Device:R R11
+U 1 1 5C27CC6B
+P 10050 4900
+F 0 "R11" H 10120 4946 50  0000 L CNN
+F 1 "1K" H 10120 4855 50  0000 L CNN
+F 2 "Resistors_SMD:R_0402" V 9980 4900 50  0001 C CNN
+F 3 "~" H 10050 4900 50  0001 C CNN
+	1    10050 4900
+	1    0    0    -1  
+$EndComp
+Connection ~ 10050 5050
+Wire Wire Line
+	10050 5050 10125 5050
+$Comp
+L Device:R R12
+U 1 1 5C27D1A8
+P 10050 5400
+F 0 "R12" H 10120 5446 50  0000 L CNN
+F 1 "1K" H 10120 5355 50  0000 L CNN
+F 2 "Resistors_SMD:R_0402" V 9980 5400 50  0001 C CNN
+F 3 "~" H 10050 5400 50  0001 C CNN
+	1    10050 5400
+	1    0    0    -1  
+$EndComp
+Connection ~ 10050 5250
+Wire Wire Line
+	10050 5250 9600 5250
+Wire Wire Line
+	10050 5550 10400 5550
+Wire Wire Line
+	10050 4750 10400 4750
+Wire Wire Line
+	10400 4750 10400 5550
+Connection ~ 10400 5550
+Wire Wire Line
+	10400 5550 10425 5550
+$Comp
+L roboy_sno-rescue:ESP8266-ESP-12E-roboy_sno U?
+U 1 1 5C1B43F0
+P 3350 1925
+AR Path="/5ABCD2F9/5C1B43F0" Ref="U?"  Part="1" 
+AR Path="/5C1B43F0" Ref="U2"  Part="1" 
+F 0 "U2" H 3450 3252 60  0000 C CNN
+F 1 "ESP8266-ESP-12E" H 3450 3146 60  0000 C CNN
+F 2 "roboy_sno:ESP-12E_SMD" H 2650 1875 60  0001 C CNN
+F 3 "" H 2650 1875 60  0000 C CNN
+	1    3350 1925
+	1    0    0    -1  
+$EndComp
+Text GLabel 4650 2025 2    50   Input ~ 0
+NEOPX
+NoConn ~ 4650 2225
+Text GLabel 4775 1625 2    50   Input ~ 0
+SDA
+Text GLabel 4775 1525 2    50   Input ~ 0
+SCL
 $EndSCHEMATC
