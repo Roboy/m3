@@ -13,6 +13,7 @@
 #define POSITION 0
 #define VELOCITY 1
 #define DISPLACEMENT 2
+#define FORCE 3
 
 class M3{
   public:
@@ -29,13 +30,15 @@ class M3{
     int32_t pwmRef = 90;
     int32_t angle = 0;
     static int32_t angleAbsolute;
+    int32_t angleAbsolute_prev = 0;
+    int32_t t0 = 0, t1 = 0;
     static int32_t angleAbsoluteVelocity;
     int32_t position = 0;
     int32_t rev_counter = 0;
     static int32_t displacement;
     int32_t force = 0;
     static int setPoint;
-    float Kp = 0.01, Kd = 0;
+    static float Kp, Kd;
     Servo servo;
     A1335 a1335;
     int analogPin, servoPin;

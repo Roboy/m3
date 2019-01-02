@@ -6,6 +6,8 @@ int M3::id = 0;
 int M3::angleAbsolute = 0;
 int M3::angleAbsoluteVelocity = 0;
 int M3::displacement = 0;
+float M3::Kp = 0.01;
+float M3::Kd = 0;
 
 M3::M3(uint8_t deviceId, int servoPin, int analogPin):servoPin(servoPin),analogPin(analogPin){
     Wire.begin();
@@ -53,32 +55,48 @@ void M3::sendStatus(){
 void  M3::MotorCommand(const roboy_middleware_msgs::MotorCommand& msg) {
         if(msg.id!=id)
             return;
-        setPoint = msg.set_points[0];
+        if(cm==DISPLACEMENT)
+            setPoint = msg.set_points[0]<0?0:msg.set_points[0];
+        else
+            setPoint = msg.set_points[0];
         // Serial.println(msg.set_points[0]);
-    }
+}
 void M3::ControlMode(const std_msgs::Int8& msg) {
-    if(msg.data>=0 && msg.data<=2){
+    if(msg.data>=0 && msg.data<=3){
         cm = msg.data;
         switch(cm){
             case POSITION:
                 setPoint = angleAbsolute;
+                Kp = 0.01;
+                Kd = 0;
                 Serial.println("changing control mode to POSITION");
                 break;
             case VELOCITY:
                 setPoint = 0;
+                Kp = 100;
+                Kd = 0;
                 Serial.println("changing control mode to VELOCITY");
                 break;
             case DISPLACEMENT:
                 setPoint = 0;
+                Kp = 0.04;
+                Kd = 0;
                 Serial.println("changing control mode to DISPLACMENT");
+                break;
+            case FORCE:
+                setPoint = 0;
+                Kp = 0.1;
+                Kd = 0;
+                Serial.println("changing control mode to FORCE");
                 break;
         }
     }else{
-        Serial.println("Invalid control mode requested, available POSITION(0), VELOCITY(1), DISPLACEMENT(2)");
+        Serial.println("Invalid control mode requested, available POSITION(0), VELOCITY(1), DISPLACEMENT(2), FORCE(3)");
     }
 }
 void M3::update(){
     static int counter = 0;
+    t1 = millis();
     int32_t val = a1335.readAngleRaw();
     if(angle>3500 && val<500){
       rev_counter++;
@@ -87,10 +105,17 @@ void M3::update(){
       rev_counter--;
     }
     angle = val;
+    angleAbsolute_prev = angleAbsolute;
     angleAbsolute = rev_counter*4096 + angle;
+    int32_t t_diff = (t1-t0);
+    if(t_diff>0)
+        angleAbsoluteVelocity = (angleAbsolute-angleAbsolute_prev)/t_diff;
+    else
+        angleAbsoluteVelocity = 0;
     displacement = analogRead(analogPin);
     force = displacement*20*springConstant;
     position = angleAbsolute;
+    t0 = t1;
 }
 void M3::updateController(){
   switch(cm){
@@ -121,6 +146,19 @@ void M3::updateController(){
         break;
       }
       case DISPLACEMENT:{
+          static int32_t error_prev = 0;
+          int32_t error = (setPoint-displacement);
+          int32_t control = Kp*error + Kd*(error-error_prev);
+          if(control>20){
+            control = 20;
+          }else if(control < -20){
+            control = -20;
+          }
+          pwmRef = 90 + control;
+          servo.write(pwmRef);
+        break;
+      }
+      case FORCE:{
           static int32_t error_prev = 0;
           int32_t error = (setPoint-force);
           int32_t control = Kp*error + Kd*(error-error_prev);
