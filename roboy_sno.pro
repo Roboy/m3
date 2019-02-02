@@ -1,4 +1,4 @@
-update=Fr 28 Dez 2018 19:02:45 CET
+update=Fr 01 Feb 2019 14:40:01 CET
 version=1
 last_client=kicad
 [general]
@@ -16,7 +16,7 @@ LibDir=
 version=1
 PageLayoutDescrFile=
 LastNetListRead=roboy_sno.net
-CopperLayerCount=4
+CopperLayerCount=2
 BoardThickness=1.6
 AllowMicroVias=0
 AllowBlindVias=0
