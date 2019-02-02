@@ -24,7 +24,7 @@ U 1 1 5ABD740F
 P 3925 3300
 F 0 "C3" H 4040 3346 50  0000 L CNN
 F 1 "10uF" H 4040 3255 50  0000 L CNN
-F 2 "Capacitors_SMD:C_0402" H 3963 3150 50  0001 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 3963 3150 50  0001 C CNN
 F 3 "~" H 3925 3300 50  0001 C CNN
 	1    3925 3300
 	1    0    0    -1  
@@ -35,7 +35,7 @@ U 1 1 5ABD7467
 P 2525 3300
 F 0 "C2" H 2640 3346 50  0000 L CNN
 F 1 "10uF" H 2640 3255 50  0000 L CNN
-F 2 "Capacitors_SMD:C_0402" H 2563 3150 50  0001 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 2563 3150 50  0001 C CNN
 F 3 "~" H 2525 3300 50  0001 C CNN
 	1    2525 3300
 	1    0    0    -1  
@@ -100,7 +100,7 @@ AR Path="/5ABCD2F9/5C1B42F3" Ref="R?"  Part="1"
 AR Path="/5C1B42F3" Ref="R7"  Part="1" 
 F 0 "R7" H 8755 1829 50  0000 R CNN
 F 1 "10k" H 8755 1920 50  0000 R CNN
-F 2 "Resistors_SMD:R_0402" V 8755 1875 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8755 1875 50  0001 C CNN
 F 3 "~" H 8825 1875 50  0001 C CNN
 	1    8825 1875
 	0    -1   -1   0   
@@ -113,7 +113,7 @@ AR Path="/5ABCD2F9/5C1B42FA" Ref="R?"  Part="1"
 AR Path="/5C1B42FA" Ref="R6"  Part="1" 
 F 0 "R6" H 8755 1129 50  0000 R CNN
 F 1 "10k" H 8755 1220 50  0000 R CNN
-F 2 "Resistors_SMD:R_0402" V 8755 1175 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 8755 1175 50  0001 C CNN
 F 3 "~" H 8825 1175 50  0001 C CNN
 	1    8825 1175
 	0    -1   -1   0   
@@ -220,7 +220,7 @@ AR Path="/5ABCD2F9/5C1B43BB" Ref="R?"  Part="1"
 AR Path="/5C1B43BB" Ref="R8"  Part="1" 
 F 0 "R8" H 9355 729 50  0000 R CNN
 F 1 "10k" H 9355 820 50  0000 R CNN
-F 2 "Resistors_SMD:R_0402" V 9355 775 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 9355 775 50  0001 C CNN
 F 3 "~" H 9425 775 50  0001 C CNN
 	1    9425 775 
 	0    -1   -1   0   
@@ -233,7 +233,7 @@ AR Path="/5ABCD2F9/5C1B43C2" Ref="R?"  Part="1"
 AR Path="/5C1B43C2" Ref="R9"  Part="1" 
 F 0 "R9" H 9355 2229 50  0000 R CNN
 F 1 "10k" H 9355 2320 50  0000 R CNN
-F 2 "Resistors_SMD:R_0402" V 9355 2275 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 9355 2275 50  0001 C CNN
 F 3 "~" H 9425 2275 50  0001 C CNN
 	1    9425 2275
 	0    -1   -1   0   
@@ -257,8 +257,6 @@ VDD5V
 Text GLabel 2650 1575 0    50   Input ~ 0
 GPIO0
 Text GLabel 3675 3650 2    50   Input ~ 0
-PWRGOOD
-Text GLabel 4050 1875 2    50   Input ~ 0
 PWRGOOD
 Wire Wire Line
 	4050 3450 3950 3450
@@ -299,7 +297,7 @@ Text GLabel 4450 1525 3    50   Input ~ 0
 Text GLabel 4450 1225 1    50   Input ~ 0
 GND
 $Comp
-L custom:Generic_TSSOP-14 U4
+L roboy_sno-rescue:Generic_TSSOP-14-custom U4
 U 1 1 5C19BBDB
 P 8925 3875
 F 0 "U4" H 8925 4737 60  0000 C CNN
@@ -344,7 +342,7 @@ U 1 1 5C1B1BC5
 P 7575 4225
 F 0 "C8" H 7690 4271 50  0000 L CNN
 F 1 "0.1u" H 7690 4180 50  0000 L CNN
-F 2 "Capacitors_SMD:C_0402" H 7613 4075 50  0001 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 7613 4075 50  0001 C CNN
 F 3 "~" H 7575 4225 50  0001 C CNN
 	1    7575 4225
 	1    0    0    -1  
@@ -358,7 +356,7 @@ U 1 1 5C1B1C7F
 P 7575 3625
 F 0 "C7" H 7690 3671 50  0000 L CNN
 F 1 "0.1u" H 7690 3580 50  0000 L CNN
-F 2 "Capacitors_SMD:C_0402" H 7613 3475 50  0001 C CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 7613 3475 50  0001 C CNN
 F 3 "~" H 7575 3625 50  0001 C CNN
 	1    7575 3625
 	1    0    0    -1  
@@ -419,7 +417,7 @@ AR Path="/5ABCD2F9/5C1E0207" Ref="R?"  Part="1"
 AR Path="/5C1E0207" Ref="R10"  Part="1" 
 F 0 "R10" H 2055 1054 50  0000 R CNN
 F 1 "10k" H 2055 1145 50  0000 R CNN
-F 2 "Resistors_SMD:R_0402" V 2055 1100 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 2055 1100 50  0001 C CNN
 F 3 "~" H 2125 1100 50  0001 C CNN
 	1    2125 1100
 	-1   0    0    1   
@@ -453,7 +451,7 @@ U 1 1 5C27CC6B
 P 10075 3725
 F 0 "R11" H 10145 3771 50  0000 L CNN
 F 1 "1K" H 10145 3680 50  0000 L CNN
-F 2 "Resistors_SMD:R_0402" V 10005 3725 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 10005 3725 50  0001 C CNN
 F 3 "~" H 10075 3725 50  0001 C CNN
 	1    10075 3725
 	1    0    0    -1  
@@ -467,7 +465,7 @@ U 1 1 5C27D1A8
 P 10075 4225
 F 0 "R12" H 10145 4271 50  0000 L CNN
 F 1 "1K" H 10145 4180 50  0000 L CNN
-F 2 "Resistors_SMD:R_0402" V 10005 4225 50  0001 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 10005 4225 50  0001 C CNN
 F 3 "~" H 10075 4225 50  0001 C CNN
 	1    10075 4225
 	1    0    0    -1  
@@ -548,26 +546,26 @@ Text GLabel 2650 1875 0    50   Input ~ 0
 ID1
 Text GLabel 4050 1975 2    50   Input ~ 0
 ID2
-Text GLabel 1400 2100 3    50   Input ~ 0
+Text GLabel 1400 2790 3    50   Input ~ 0
 ID1
-Text GLabel 1400 2700 3    50   Input ~ 0
+Text GLabel 1400 3800 3    50   Input ~ 0
 ID2
-Text GLabel 1600 1950 2    50   Input ~ 0
+Text GLabel 1600 2340 2    50   Input ~ 0
 GND
 $Comp
 L Jumper:SolderJumper_3_Open JP2
 U 1 1 5C536D59
-P 1400 1950
-F 0 "JP2" H 1400 2155 50  0000 C CNN
-F 1 "SolderJumper_3_Open" H 1400 2064 50  0000 C CNN
-F 2 "custom_lib:Solder_Bridge_3_0402" H 1400 1950 50  0001 C CNN
-F 3 "~" H 1400 1950 50  0001 C CNN
-	1    1400 1950
+P 1400 2340
+F 0 "JP2" H 1400 2545 50  0000 C CNN
+F 1 "SolderJumper_3_Open" H 1400 2454 50  0000 C CNN
+F 2 "custom_lib:Solder_Bridge_3_0402" H 1400 2340 50  0001 C CNN
+F 3 "~" H 1400 2340 50  0001 C CNN
+	1    1400 2340
 	1    0    0    -1  
 $EndComp
-Text GLabel 1200 1950 0    50   Input ~ 0
+Text GLabel 1200 2340 0    50   Input ~ 0
 3.3V
-Text GLabel 1400 1500 3    50   Input ~ 0
+Text GLabel 1400 1800 3    50   Input ~ 0
 ID0
 Text GLabel 1600 1350 2    50   Input ~ 0
 GND
@@ -584,19 +582,77 @@ F 3 "~" H 1400 1350 50  0001 C CNN
 $EndComp
 Text GLabel 1200 1350 0    50   Input ~ 0
 3.3V
-Text GLabel 1600 2550 2    50   Input ~ 0
+Text GLabel 1600 3350 2    50   Input ~ 0
 GND
 $Comp
 L Jumper:SolderJumper_3_Open JP3
 U 1 1 5C53CDEC
-P 1400 2550
-F 0 "JP3" H 1400 2755 50  0000 C CNN
-F 1 "SolderJumper_3_Open" H 1400 2664 50  0000 C CNN
-F 2 "custom_lib:Solder_Bridge_3_0402" H 1400 2550 50  0001 C CNN
-F 3 "~" H 1400 2550 50  0001 C CNN
-	1    1400 2550
+P 1400 3350
+F 0 "JP3" H 1400 3555 50  0000 C CNN
+F 1 "SolderJumper_3_Open" H 1400 3464 50  0000 C CNN
+F 2 "custom_lib:Solder_Bridge_3_0402" H 1400 3350 50  0001 C CNN
+F 3 "~" H 1400 3350 50  0001 C CNN
+	1    1400 3350
 	1    0    0    -1  
 $EndComp
-Text GLabel 1200 2550 0    50   Input ~ 0
+Text GLabel 1200 3350 0    50   Input ~ 0
 3.3V
+Text GLabel 4050 1875 2    50   Input ~ 0
+ID3
+Text GLabel 1380 4590 3    50   Input ~ 0
+ID3
+Text GLabel 1580 4440 2    50   Input ~ 0
+GND
+$Comp
+L Jumper:SolderJumper_3_Open JP4
+U 1 1 5C562380
+P 1380 4440
+F 0 "JP4" H 1380 4645 50  0000 C CNN
+F 1 "SolderJumper_3_Open" H 1380 4554 50  0000 C CNN
+F 2 "custom_lib:Solder_Bridge_3_0402" H 1380 4440 50  0001 C CNN
+F 3 "~" H 1380 4440 50  0001 C CNN
+	1    1380 4440
+	1    0    0    -1  
+$EndComp
+Text GLabel 1180 4440 0    50   Input ~ 0
+3.3V
+$Comp
+L roboy_sno-rescue:R-Device R?
+U 1 1 5C563ED8
+P 1400 1650
+AR Path="/5ABCD2F9/5C563ED8" Ref="R?"  Part="1" 
+AR Path="/5C563ED8" Ref="R1"  Part="1" 
+F 0 "R1" H 1330 1604 50  0000 R CNN
+F 1 "10k" H 1330 1695 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 1330 1650 50  0001 C CNN
+F 3 "~" H 1400 1650 50  0001 C CNN
+	1    1400 1650
+	-1   0    0    1   
+$EndComp
+$Comp
+L roboy_sno-rescue:R-Device R?
+U 1 1 5C56448A
+P 1400 2640
+AR Path="/5ABCD2F9/5C56448A" Ref="R?"  Part="1" 
+AR Path="/5C56448A" Ref="R2"  Part="1" 
+F 0 "R2" H 1330 2594 50  0000 R CNN
+F 1 "10k" H 1330 2685 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 1330 2640 50  0001 C CNN
+F 3 "~" H 1400 2640 50  0001 C CNN
+	1    1400 2640
+	-1   0    0    1   
+$EndComp
+$Comp
+L roboy_sno-rescue:R-Device R?
+U 1 1 5C564B5B
+P 1400 3650
+AR Path="/5ABCD2F9/5C564B5B" Ref="R?"  Part="1" 
+AR Path="/5C564B5B" Ref="R3"  Part="1" 
+F 0 "R3" H 1330 3604 50  0000 R CNN
+F 1 "10k" H 1330 3695 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 1330 3650 50  0001 C CNN
+F 3 "~" H 1400 3650 50  0001 C CNN
+	1    1400 3650
+	-1   0    0    1   
+$EndComp
 $EndSCHEMATC
