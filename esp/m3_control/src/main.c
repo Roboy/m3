@@ -22,27 +22,21 @@ static int64_t t0 = 0, t1 = 0;
 
 static char tag[] = "servo1";
 
-static union{
-    struct{
-        int32_t pos;
-        int32_t vel;
-        int32_t displacement;
-    };
-    uint8_t data[12];
+struct{
+    int32_t motor;
+    int32_t pos;
+    int32_t vel;
+    int32_t displacement;
+    int32_t pwm;
 }status_frame;
 
-static union{
-    struct{
-        uint8_t motor;
-        uint8_t command;
-        int32_t setpoint;
-    };
-    uint8_t data[6];
+struct{
+    uint8_t motor:8;
+    uint8_t command:8;
+    int32_t setpoint:32;
 }command_frame;
 
 static xQueueHandle gpio_evt_queue = NULL;
-
-static const char *payload = "Message from ESP32 ";
 
 #define HOST_IP_ADDR "192.168.0.224"
 #define PORT 8000
@@ -71,9 +65,10 @@ static int s_retry_num = 0;
 static void command_task(void *pvParameters)
 {
     char rx_buffer[128];
-    char addr_str[128];
     int addr_family;
     int ip_protocol;
+
+    command_frame.setpoint = 0;
 
     while (1) {
 
@@ -103,7 +98,7 @@ static void command_task(void *pvParameters)
             int len = recvfrom(sock, rx_buffer, sizeof(rx_buffer) - 1, 0, (struct sockaddr *)&source_addr, &socklen);
             // Error occurred during receiving
             if (len == 6) {
-                memcpy(command_frame.data,rx_buffer,6);
+//                memcpy(command_frame.data,rx_buffer,6);
                 ESP_LOGI(TAG, "Received command_frame");
             }
         }
@@ -119,14 +114,17 @@ static void command_task(void *pvParameters)
 
 static void status_task(void *pvParameters)
 {
-    char rx_buffer[128];
     char addr_str[128];
     int addr_family;
     int ip_protocol;
+    status_frame.motor = 0;
+    status_frame.pos = 0;
+    status_frame.vel = 0xffffff01;
+    status_frame.displacement = 0xffffff02;
 
     while (1) {
 
-        struct sockaddr_in dest_addr, local_addr;
+        struct sockaddr_in dest_addr;
         dest_addr.sin_addr.s_addr = inet_addr(HOST_IP_ADDR);
         dest_addr.sin_family = AF_INET;
         dest_addr.sin_port = htons(PORT);
@@ -141,8 +139,7 @@ static void status_task(void *pvParameters)
         }
 
         while (1) {
-
-            int err = sendto(sock, payload, strlen(payload), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+            int err = sendto(sock, (char*)&status_frame, sizeof(status_frame), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
             if (err < 0) {
                 ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
                 break;
@@ -224,10 +221,8 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 void servo_task(void *ignore) {
     int minValue        = 2000;  // micro seconds (uS)
     int maxValue        = 3200; // micro seconds (uS)
-    int zeroSpeed       = (maxValue-minValue)/2;
-    int sweepDuration   = 5000; // milliseconds (ms)
+    int zeroSpeed       = minValue+(maxValue-minValue)/2;
     int duty            = 2000 ;
-    int valueChangeRate = 20; // msecs
 
     ledc_timer_config_t timer_conf;
     timer_conf.bit_num    = LEDC_TIMER_15_BIT;
@@ -245,15 +240,20 @@ void servo_task(void *ignore) {
     ledc_conf.timer_sel  = LEDC_TIMER_0;
     ledc_channel_config(&ledc_conf);
 
-    int Kp = 1;                          // Proportional constant
+    status_frame.pos = 0;
+    status_frame.vel = 0;
+    status_frame.displacement = 0;
+
+    int Kp = 10;                          // Proportional constant
     while(1) {
         int errorAngle, output;             // Control system variables
-        errorAngle = command_frame.setpoint - status_frame.pos;         // Calculate error
+        errorAngle = status_frame.pos-command_frame.setpoint;         // Calculate error
         output = errorAngle * Kp;                 // Calculate proportional
         if(output > 500) output = 500;            // Clamp output
         if(output < -500) output = -500;
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
+        status_frame.pwm = output;
         vTaskDelay(20/portTICK_PERIOD_MS);
 //        for (i=0; i<changesPerSweep; i++) {
 //            if (direction > 0) {
@@ -342,7 +342,7 @@ void feedback360_task()                            // Cog keeps angle variable u
         else if(turns <  0)
             status_frame.pos = ((turns + 1) * unitsFC) - (unitsFC - theta);
 
-        ESP_LOGD("timer", "tCycle = %d, tLow = %d tHigh = %d angle = %d", tCycle, tLow, tHigh, status_frame.pos);
+        ESP_LOGI("timer", "angle = %d", status_frame.pos);
 
         thetaP = theta;                           // Theta previous for next rep
     }
