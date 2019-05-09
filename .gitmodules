@@ -7,3 +7,6 @@
 [submodule "Housings_SSOP.pretty"]
 	path = Housings_SSOP.pretty
 	url = https://github.com/KiCad/Housings_SSOP.pretty
+[submodule "esp/esp-idf"]
+	path = esp/esp-idf
+	url = https://github.com/espressif/esp-idf
