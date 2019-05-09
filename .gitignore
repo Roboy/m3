@@ -69,3 +69,7 @@ incremental_db/
 #software/
 *.inc
 .vscode
+
+cmake-build-debug/
+build/
+.idea/
