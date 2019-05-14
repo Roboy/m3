@@ -2,8 +2,6 @@
 
 *_generation_script*
 *_inst.vhd
-*.png
-*.jpg
 *.bak
 *.mif
 *.eqn
