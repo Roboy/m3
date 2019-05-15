@@ -52,8 +52,8 @@ void status_task(void *ignore)
     int ip_protocol;
     status_frame.motor = 0;
     status_frame.pos = 0;
-    status_frame.vel = 0xffffff01;
-    status_frame.dis = 0xffffff02;
+    status_frame.vel = 0;
+    status_frame.dis = 0;
 
     while (1) {
 
