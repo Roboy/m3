@@ -176,9 +176,37 @@ static void command_task(void *pvParameters)
             socklen_t socklen = sizeof(source_addr);
             int len = recvfrom(sock, rx_buffer, sizeof(rx_buffer) - 1, 0, (struct sockaddr *)&source_addr, &socklen);
             // Error occurred during receiving
-            if (len == 6) {
-//                memcpy(command_frame.data,rx_buffer,6);
-                ESP_LOGI(TAG, "Received command_frame");
+            if (len == 10) {
+                int m;
+                memcpy(&m,&rx_buffer[4],4);
+                if(m==command_frame.motor){
+                    memcpy(&command_frame.setpoint,rx_buffer,4);
+                }
+//                ESP_LOGI(TAG, "Received command_frame for motor %d with setpoint %d", m,s);
+            }else if(len == 20){
+                int m,kp,ki,kd,mode;
+                memcpy(&m,&rx_buffer[16],4);
+                if(m==command_frame.motor) {
+                    memcpy(&mode, &rx_buffer[12], 4);
+                    memcpy(&kp, &rx_buffer[8], 4);
+                    memcpy(&ki, &rx_buffer[4], 4);
+                    memcpy(&kd, &rx_buffer[0], 4);
+                    if(mode==0){
+                        command_frame.setpoint = status_frame.pos;
+                    }else if(mode == 1){
+                        command_frame.setpoint = 0;
+                    }else if(mode ==2){
+                        command_frame.setpoint = 0;
+                    }
+                    control_frame.mode = mode;
+                    control_frame.Kp = kp;
+                    control_frame.Ki = ki;
+                    control_frame.Kd = kd;
+                    ESP_LOGI(TAG, "Received control_frame for motor %d mode %d kp %d ki %d kd %d", m, mode, kp, ki, kd);
+//                if(m==command_frame.motor){
+//                    memcpy(&command_frame.setpoint,rx_buffer,4);
+//                }
+                }
             }
         }
 
@@ -334,8 +362,7 @@ void servo_task(void *ignore) {
     status_frame.pos = 0;
     status_frame.vel = 0;
     status_frame.dis = 0;
-
-    int Kp = 10;                          // Proportional constant
+    int error_prev = 0;
     while(1) {
         int error, output;             // Control system variables
         switch(control_frame.mode){
@@ -346,32 +373,20 @@ void servo_task(void *ignore) {
                 error = status_frame.vel-command_frame.setpoint;         // Calculate error
                 break;
             case 2:
-                error = status_frame.dis-command_frame.setpoint;         // Calculate error
+                error = command_frame.setpoint-status_frame.dis;         // Calculate error
                 break;
             default:
                 error = 0;
         }
 
-        output = error * Kp;                 // Calculate proportional
+        output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
         if(output > 500) output = 500;            // Clamp output
         if(output < -500) output = -500;
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
         status_frame.pwm = output;
         vTaskDelay(20/portTICK_PERIOD_MS);
-//        for (i=0; i<changesPerSweep; i++) {
-//            if (direction > 0) {
-//                duty += changeDelta;
-//            } else {
-//                duty -= changeDelta;
-//            }
-//            ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, duty);
-//            ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-//            vTaskDelay(valueChangeRate/portTICK_PERIOD_MS);
-////            ESP_LOGI(tag, "%d", duty);
-//        }
-//        direction = -direction;
-//        ESP_LOGI(tag, "Direction now %d", direction);
+        error_prev = error;
     } // End loop forever
 
     vTaskDelete(NULL);

@@ -10,3 +10,6 @@
 [submodule "esp/esp-idf"]
 	path = esp/esp-idf
 	url = https://github.com/espressif/esp-idf
+[submodule "esp/m3_control/src/Adafruit_NeoPixel"]
+	path = esp/m3_control/src/Adafruit_NeoPixel
+	url = https://github.com/adafruit/Adafruit_NeoPixel
