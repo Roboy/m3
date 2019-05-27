@@ -325,7 +325,7 @@ void servo_task(void *ignore) {
     ledc_channel_config_t ledc_conf;
     ledc_conf.channel    = LEDC_CHANNEL_0;
     ledc_conf.duty       = duty;
-    ledc_conf.gpio_num   = 16;
+    ledc_conf.gpio_num   = 19;
     ledc_conf.intr_type  = LEDC_INTR_DISABLE;
     ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
     ledc_conf.timer_sel  = LEDC_TIMER_0;
@@ -396,7 +396,7 @@ void feedback360_task()                            // Cog keeps angle variable u
     theta = (unitsFC - 1) - ((dc - dcMin) * unitsFC) / (dcMax - dcMin + 1);
     thetaP = theta;
 
-    int io_num = 5;
+    int io_num = 21;
 
     while(1)                                    // Main loop for this cog
     {
@@ -460,7 +460,7 @@ void app_main()
     //set as output mode
     io_conf.mode = GPIO_MODE_INPUT;
     //bit mask of the pins that you want to set,e.g.GPIO18/19
-    io_conf.pin_bit_mask = (1ULL<<15);
+    io_conf.pin_bit_mask = (1ULL<<21);
     //disable pull-down mode
     io_conf.pull_down_en = 0;
     //disable pull-up mode
@@ -473,7 +473,7 @@ void app_main()
     //install gpio isr service
     gpio_install_isr_service(0);
     //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(15, gpio_isr_handler, (void*) 15);
+    gpio_isr_handler_add(21, gpio_isr_handler, (void*) 21);
     //Initialize NVS
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
