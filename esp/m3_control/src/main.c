@@ -23,6 +23,8 @@
 static int64_t t0 = 0, t1 = 0;
 
 static char tag[] = "servo1";
+static int id = 0;
+static int displacement_offset = 0;
 
 struct{
     int32_t motor;
@@ -47,7 +49,7 @@ struct{
 
 static xQueueHandle gpio_evt_queue = NULL;
 
-#define HOST_IP_ADDR "192.168.0.224"
+#define HOST_IP_ADDR "192.168.255.255"
 #define PORT 8000
 
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
@@ -106,6 +108,7 @@ static void print_char_val_type(esp_adc_cal_value_t val_type)
 }
 
 void displacement_task(void *ignore){
+    status_frame.dis = 0;
     //Check if Two Point or Vref are burned into eFuse
     check_efuse();
 
@@ -122,6 +125,22 @@ void displacement_task(void *ignore){
     esp_adc_cal_value_t val_type = esp_adc_cal_characterize(unit, atten, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
     print_char_val_type(val_type);
 
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+
+    uint32_t adc_reading = 0;
+    //Multisampling
+    for (int i = 0; i < NO_OF_SAMPLES; i++) {
+        if (unit == ADC_UNIT_1) {
+            adc_reading += adc1_get_raw((adc1_channel_t)channel);
+        } else {
+            int raw;
+            adc2_get_raw((adc2_channel_t)channel, ADC_WIDTH_BIT_12, &raw);
+            adc_reading += raw;
+        }
+    }
+    adc_reading /= NO_OF_SAMPLES;
+    displacement_offset = adc_reading;
+
     //Continuously sample ADC1
     while (1) {
         uint32_t adc_reading = 0;
@@ -136,7 +155,11 @@ void displacement_task(void *ignore){
             }
         }
         adc_reading /= NO_OF_SAMPLES;
-        status_frame.dis = adc_reading;
+        if ( ((int)adc_reading-displacement_offset) < 0 ) {
+            displacement_offset = adc_reading;
+//            printf("%d\n",displacement_offset);
+        }
+        status_frame.dis = adc_reading-displacement_offset;
         vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
@@ -182,7 +205,7 @@ static void command_task(void *pvParameters)
                 if(m==command_frame.motor){
                     memcpy(&command_frame.setpoint,rx_buffer,4);
                 }
-//                ESP_LOGI(TAG, "Received command_frame for motor %d with setpoint %d", m,s);
+                ESP_LOGI(TAG,"Received command_frame for motor %d with setpoint %d", m, command_frame.setpoint);
             }else if(len == 20){
                 int m,kp,ki,kd,mode;
                 memcpy(&m,&rx_buffer[16],4);
@@ -224,14 +247,16 @@ static void status_task(void *pvParameters)
     char addr_str[128];
     int addr_family;
     int ip_protocol;
-    status_frame.motor = 0;
-    status_frame.pos = 0;
     status_frame.vel = 0;
-    status_frame.dis = 0;
 
     int64_t t0_vel = 0, t1_vel = 0;
     t0_vel = esp_timer_get_time();
     int pos_prev = 0;
+
+    id = (gpio_get_level(18)<<4|gpio_get_level(5)<<3|gpio_get_level(17)<<2|gpio_get_level(16)<<1|gpio_get_level(4));
+    printf("my id is %d %d %d %d %d-> %d\n", gpio_get_level(18),gpio_get_level(5),gpio_get_level(17),gpio_get_level(16),gpio_get_level(4),id);
+    status_frame.motor = id;
+    command_frame.motor = id;
 
     while (1) {
 
@@ -253,14 +278,14 @@ static void status_task(void *pvParameters)
             t1_vel = esp_timer_get_time();
             int err = sendto(sock, (char*)&status_frame, sizeof(status_frame), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
             if (err < 0) {
-                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
+//                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
                 break;
             }
             ESP_LOGD(TAG, "Message sent");
             vTaskDelay(10 / portTICK_PERIOD_MS);
             float dt = (t1_vel-t0_vel)/1000000.0f; // in s
             float vel = (dt>0?(status_frame.pos-pos_prev)/dt:0);
-            status_frame.vel = vel;
+//            status_frame.vel = vel;
 
 //            ESP_LOGI("vel", "%f %f",vel, dt);
             pos_prev = status_frame.pos;
@@ -268,7 +293,7 @@ static void status_task(void *pvParameters)
         }
 
         if (sock != -1) {
-            ESP_LOGE(TAG, "Shutting down socket and restarting...");
+//            ESP_LOGE(TAG, "Shutting down socket and restarting...");
             shutdown(sock, 0);
             close(sock);
         }
@@ -338,9 +363,7 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 }
 
 void servo_task(void *ignore) {
-    int minValue        = 2000;  // micro seconds (uS)
-    int maxValue        = 3200; // micro seconds (uS)
-    int zeroSpeed       = minValue+(maxValue-minValue)/2;
+    int zeroSpeed       = 2450;
     int duty            = 2000 ;
 
     ledc_timer_config_t timer_conf;
@@ -359,9 +382,14 @@ void servo_task(void *ignore) {
     ledc_conf.timer_sel  = LEDC_TIMER_0;
     ledc_channel_config(&ledc_conf);
 
-    status_frame.pos = 0;
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+
+    control_frame.mode = 2;
+    control_frame.Kp = 1;
+    control_frame.Ki = 0;
+    control_frame.Kd = 0;
+
     status_frame.vel = 0;
-    status_frame.dis = 0;
     int error_prev = 0;
     while(1) {
         int error, output;             // Control system variables
@@ -373,7 +401,7 @@ void servo_task(void *ignore) {
                 error = status_frame.vel-command_frame.setpoint;         // Calculate error
                 break;
             case 2:
-                error = command_frame.setpoint-status_frame.dis;         // Calculate error
+                error = status_frame.dis - command_frame.setpoint;         // Calculate error
                 break;
             default:
                 error = 0;
@@ -382,10 +410,11 @@ void servo_task(void *ignore) {
         output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
         if(output > 500) output = 500;            // Clamp output
         if(output < -500) output = -500;
+        status_frame.vel = output;
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
         status_frame.pwm = output;
-        vTaskDelay(20/portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(10));
         error_prev = error;
     } // End loop forever
 
@@ -412,6 +441,9 @@ void feedback360_task()                            // Cog keeps angle variable u
     thetaP = theta;
 
     int io_num = 21;
+
+    int pos = 0, pos_offset = 0;
+    bool first = true;
 
     while(1)                                    // Main loop for this cog
     {
@@ -457,9 +489,17 @@ void feedback360_task()                            // Cog keeps angle variable u
         // Construct the angle measurement from the turns count and
         // current theta value.
         if(turns >= 0)
-            status_frame.pos = (turns * unitsFC) + theta;
+            pos = (turns * unitsFC) + theta;
         else if(turns <  0)
-            status_frame.pos = ((turns + 1) * unitsFC) - (unitsFC - theta);
+            pos = ((turns + 1) * unitsFC) - (unitsFC - theta);
+
+        if(first){
+            first = false;
+            pos_offset = pos;
+            status_frame.pos = 0;
+        }else{
+            status_frame.pos = pos-pos_offset;
+        }
 
         ESP_LOGD("timer", "angle = %d", status_frame.pos);
 
@@ -469,6 +509,14 @@ void feedback360_task()                            // Cog keeps angle variable u
 
 void app_main()
 {
+    gpio_config_t dip_config;
+    dip_config.intr_type = GPIO_PIN_INTR_DISABLE; 	//Enable interrupt on both rising and falling edges
+    dip_config.mode = GPIO_MODE_INPUT;        	//Set as Input
+    dip_config.pin_bit_mask = (1ULL<<18|1ULL<<17|1ULL<<16|1ULL<<5|1ULL<<4); //Bitmask
+    dip_config.pull_up_en = GPIO_PULLUP_DISABLE; 	//Disable pullup
+    dip_config.pull_down_en = GPIO_PULLDOWN_ENABLE; //Enable pulldown
+    gpio_config(&dip_config);
+
     gpio_config_t io_conf;
     //disable interrupt
     io_conf.intr_type = GPIO_PIN_INTR_ANYEDGE;
@@ -498,14 +546,14 @@ void app_main()
     ESP_ERROR_CHECK(ret);
     nvs_flash_init();
     wifi_init_sta();
-    xTaskCreate(&servo_task,"servo_task",2048,NULL,5,NULL);
-    printf("servo_task started\n");
-    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,5,NULL);
+    xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
+    printf("displacement_task started\n");
+    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
     printf("feedback360_task started\n");
     xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
     printf("status_task started\n");
-    xTaskCreate(&command_task,"command_task",2048,NULL,5,NULL);
+    xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
     printf("command_task started\n");
-    xTaskCreate(&displacement_task,"displacement_task",2048,NULL,5,NULL);
-    printf("displacement_task started\n");
+    xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
+    printf("servo_task started\n");
 }
