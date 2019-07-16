@@ -130,13 +130,7 @@ void displacement_task(void *ignore){
     uint32_t adc_reading = 0;
     //Multisampling
     for (int i = 0; i < NO_OF_SAMPLES; i++) {
-        if (unit == ADC_UNIT_1) {
-            adc_reading += adc1_get_raw((adc1_channel_t)channel);
-        } else {
-            int raw;
-            adc2_get_raw((adc2_channel_t)channel, ADC_WIDTH_BIT_12, &raw);
-            adc_reading += raw;
-        }
+        adc_reading += adc1_get_raw((adc1_channel_t)channel);
     }
     adc_reading /= NO_OF_SAMPLES;
     displacement_offset = adc_reading;
@@ -146,13 +140,7 @@ void displacement_task(void *ignore){
         uint32_t adc_reading = 0;
         //Multisampling
         for (int i = 0; i < NO_OF_SAMPLES; i++) {
-            if (unit == ADC_UNIT_1) {
-                adc_reading += adc1_get_raw((adc1_channel_t)channel);
-            } else {
-                int raw;
-                adc2_get_raw((adc2_channel_t)channel, ADC_WIDTH_BIT_12, &raw);
-                adc_reading += raw;
-            }
+            adc_reading += adc1_get_raw((adc1_channel_t)channel);
         }
         adc_reading /= NO_OF_SAMPLES;
         if ( ((int)adc_reading-displacement_offset) < 0 ) {
@@ -282,7 +270,7 @@ static void status_task(void *pvParameters)
                 break;
             }
             ESP_LOGD(TAG, "Message sent");
-            vTaskDelay(10 / portTICK_PERIOD_MS);
+            vTaskDelay(200 / portTICK_PERIOD_MS);
             float dt = (t1_vel-t0_vel)/1000000.0f; // in s
             float vel = (dt>0?(status_frame.pos-pos_prev)/dt:0);
 //            status_frame.vel = vel;
@@ -401,15 +389,20 @@ void servo_task(void *ignore) {
                 error = status_frame.vel-command_frame.setpoint;         // Calculate error
                 break;
             case 2:
-                error = status_frame.dis - command_frame.setpoint;         // Calculate error
+                if(command_frame.setpoint>=0)
+                    error = status_frame.dis - command_frame.setpoint;         // Calculate error
+                else
+                    error = 0;
                 break;
             default:
                 error = 0;
         }
 
         output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
-        if(output > 500) output = 500;            // Clamp output
-        if(output < -500) output = -500;
+        if(output > 1000)
+            output = 1000;            // Clamp output
+        if(output < -1000)
+            output = -1000;
         status_frame.vel = output;
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
