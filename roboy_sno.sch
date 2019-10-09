@@ -19,7 +19,7 @@ VDD5V
 Text GLabel 9900 3700 2    50   Input ~ 0
 GND
 $Comp
-L roboy_sno-rescue:C-Device C3
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C3
 U 1 1 5ABD740F
 P 9700 3950
 F 0 "C3" H 9815 3996 50  0000 L CNN
@@ -30,7 +30,7 @@ F 3 "~" H 9700 3950 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L roboy_sno-rescue:C-Device C2
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C2
 U 1 1 5ABD7467
 P 8300 3950
 F 0 "C2" H 8415 3996 50  0000 L CNN
@@ -41,7 +41,7 @@ F 3 "~" H 8300 3950 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L roboy_sno-rescue:LD39200-roboy_sno U1
+L roboy_sno-rescue:LD39200-roboy_sno-roboy_sno-rescue U1
 U 1 1 5AB658D6
 P 9050 4200
 F 0 "U1" H 9000 4525 50  0000 C CNN
@@ -78,7 +78,7 @@ Wire Wire Line
 Wire Wire Line
 	8300 4100 8050 4100
 $Comp
-L roboy_sno-rescue:Conn_01x02_Male-Connector J5
+L roboy_sno-rescue:Conn_01x02_Male-Connector-roboy_sno-rescue J5
 U 1 1 5B881020
 P 7575 2975
 F 0 "J5" H 7548 2855 50  0000 R CNN
@@ -97,7 +97,7 @@ GND
 Wire Wire Line
 	7175 1675 7375 1675
 $Comp
-L roboy_sno-rescue:D_Schottky-Device D?
+L roboy_sno-rescue:D_Schottky-Device-roboy_sno-rescue D?
 U 1 1 5C1B4309
 P 7025 1675
 AR Path="/5ABCD2F9/5C1B4309" Ref="D?"  Part="1" 
@@ -112,7 +112,7 @@ $EndComp
 Text GLabel 7675 1075 0    50   Input ~ 0
 GND
 $Comp
-L roboy_sno-rescue:USB_B_Mini-Connector_Specialized J?
+L roboy_sno-rescue:USB_B_Mini-Connector_Specialized-roboy_sno-rescue J?
 U 1 1 5C1B4385
 P 7675 1475
 AR Path="/5ABCD2F9/5C1B4385" Ref="J?"  Part="1" 
@@ -177,7 +177,7 @@ Connection ~ 9725 4100
 Wire Wire Line
 	9725 4100 9700 4100
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5C1E0207
 P 1625 1100
 AR Path="/5ABCD2F9/5C1E0207" Ref="R?"  Part="1" 
@@ -219,7 +219,7 @@ Text GLabel 6100 2300 2    50   Input ~ 0
 Text GLabel 2075 950  1    50   Input ~ 0
 GND
 $Comp
-L roboy_sno-rescue:C-Device C1
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C1
 U 1 1 5CD59FD3
 P 2075 1100
 F 0 "C1" H 2190 1146 50  0000 L CNN
@@ -285,7 +285,7 @@ ID3
 Text GLabel 5000 2500 0    50   Input ~ 0
 ID4
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD5D033
 P 5750 2500
 AR Path="/5ABCD2F9/5CD5D033" Ref="R?"  Part="1" 
@@ -298,7 +298,7 @@ F 3 "~" H 5750 2500 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD5D777
 P 5750 2400
 AR Path="/5ABCD2F9/5CD5D777" Ref="R?"  Part="1" 
@@ -311,7 +311,7 @@ F 3 "~" H 5750 2400 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD5D7B1
 P 5750 2300
 AR Path="/5ABCD2F9/5CD5D7B1" Ref="R?"  Part="1" 
@@ -324,7 +324,7 @@ F 3 "~" H 5750 2300 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD5D7EB
 P 5750 2200
 AR Path="/5ABCD2F9/5CD5D7EB" Ref="R?"  Part="1" 
@@ -337,7 +337,7 @@ F 3 "~" H 5750 2200 50  0001 C CNN
 	0    1    1    0   
 $EndComp
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD5D827
 P 5750 2100
 AR Path="/5ABCD2F9/5CD5D827" Ref="R?"  Part="1" 
@@ -401,7 +401,7 @@ MTCK
 Text GLabel 4275 2175 2    50   Input ~ 0
 MTDO
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD64770
 P 4000 1875
 AR Path="/5ABCD2F9/5CD64770" Ref="R?"  Part="1" 
@@ -416,7 +416,7 @@ $EndComp
 Wire Wire Line
 	4275 1875 4150 1875
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD65C84
 P 4000 1975
 AR Path="/5ABCD2F9/5CD65C84" Ref="R?"  Part="1" 
@@ -431,7 +431,7 @@ $EndComp
 Wire Wire Line
 	4275 1975 4150 1975
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD66330
 P 4000 2075
 AR Path="/5ABCD2F9/5CD66330" Ref="R?"  Part="1" 
@@ -446,7 +446,7 @@ $EndComp
 Wire Wire Line
 	4275 2075 4150 2075
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD66337
 P 4000 2175
 AR Path="/5ABCD2F9/5CD66337" Ref="R?"  Part="1" 
@@ -536,7 +536,7 @@ Wire Wire Line
 Connection ~ 4550 4250
 NoConn ~ 7650 4550
 $Comp
-L roboy_sno-rescue:C-Device C9
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C9
 U 1 1 5CD76F57
 P 7000 4825
 F 0 "C9" H 7115 4871 50  0000 L CNN
@@ -547,7 +547,7 @@ F 3 "~" H 7000 4825 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L roboy_sno-rescue:C-Device C8
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C8
 U 1 1 5CD772E8
 P 6300 4825
 F 0 "C8" H 6415 4871 50  0000 L CNN
@@ -558,7 +558,7 @@ F 3 "~" H 6300 4825 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L roboy_sno-rescue:C-Device C7
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C7
 U 1 1 5CD7735A
 P 5600 4825
 F 0 "C7" H 5715 4871 50  0000 L CNN
@@ -569,7 +569,7 @@ F 3 "~" H 5600 4825 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L roboy_sno-rescue:C-Device C6
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C6
 U 1 1 5CD773D6
 P 4900 4825
 F 0 "C6" H 5015 4871 50  0000 L CNN
@@ -662,7 +662,7 @@ MOTOR_SENSE
 Wire Wire Line
 	3250 750  3250 1025
 $Comp
-L roboy_sno-rescue:C-Device C4
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C4
 U 1 1 5CD5FA82
 P 3050 875
 F 0 "C4" H 3165 921 50  0000 L CNN
@@ -673,7 +673,7 @@ F 3 "~" H 3050 875 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L roboy_sno-rescue:C-Device C5
+L roboy_sno-rescue:C-Device-roboy_sno-rescue C5
 U 1 1 5CD5FE9C
 P 3450 875
 F 0 "C5" H 3565 921 50  0000 L CNN
@@ -722,7 +722,7 @@ F 3 "" H 4825 3300 50  0001 C CNN
 	-1   0    0    1   
 $EndComp
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD74806
 P 5175 2775
 AR Path="/5ABCD2F9/5CD74806" Ref="R?"  Part="1" 
@@ -735,7 +735,7 @@ F 3 "~" H 5175 2775 50  0001 C CNN
 	0    -1   -1   0   
 $EndComp
 $Comp
-L roboy_sno-rescue:R-Device R?
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
 U 1 1 5CD74908
 P 5175 3100
 AR Path="/5ABCD2F9/5CD74908" Ref="R?"  Part="1" 

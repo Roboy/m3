@@ -158,7 +158,7 @@ static void command_task(void *pvParameters)
     int addr_family;
     int ip_protocol;
 
-    command_frame.setpoint = 0;
+    command_frame.setpoint = 100;
 
     while (1) {
 
@@ -378,9 +378,9 @@ void servo_task(void *ignore) {
     control_frame.Kd = 0;
 
     status_frame.vel = 0;
-    int error_prev = 0;
+    float error_prev = 0;
     while(1) {
-        int error, output;             // Control system variables
+        float error, output;             // Control system variables
         switch(control_frame.mode){
             case 0:
                 error = status_frame.pos-command_frame.setpoint;         // Calculate error
@@ -407,7 +407,7 @@ void servo_task(void *ignore) {
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
         status_frame.pwm = output;
-        vTaskDelay(pdMS_TO_TICKS(10));
+        vTaskDelay(pdMS_TO_TICKS(3));
         error_prev = error;
     } // End loop forever
 
