@@ -352,7 +352,6 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 
 void servo_task(void *ignore) {
     int zeroSpeed       = 2450;
-    int duty            = 2000 ;
 
     ledc_timer_config_t timer_conf;
     timer_conf.bit_num    = LEDC_TIMER_15_BIT;
@@ -363,14 +362,17 @@ void servo_task(void *ignore) {
 
     ledc_channel_config_t ledc_conf;
     ledc_conf.channel    = LEDC_CHANNEL_0;
-    ledc_conf.duty       = duty;
+    ledc_conf.duty       = zeroSpeed;
     ledc_conf.gpio_num   = 19;
     ledc_conf.intr_type  = LEDC_INTR_DISABLE;
     ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
     ledc_conf.timer_sel  = LEDC_TIMER_0;
     ledc_channel_config(&ledc_conf);
+    //
+    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+100);
+    ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
 
-    vTaskDelay(1000/portTICK_PERIOD_MS);
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
     control_frame.mode = 2;
     control_frame.Kp = 1;
