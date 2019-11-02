@@ -23,7 +23,9 @@
 static int64_t t0 = 0, t1 = 0;
 
 static char tag[] = "servo1";
-static int id = 0;
+//#define MIRRORED
+#define DEFAULT_SETPOINT 500
+static int id = 11;
 static int displacement_offset = 0;
 
 struct{
@@ -49,7 +51,7 @@ struct{
 
 static xQueueHandle gpio_evt_queue = NULL;
 
-#define HOST_IP_ADDR "192.168.255.255"
+#define HOST_IP_ADDR "192.168.0.255"
 #define PORT 8000
 
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
@@ -64,7 +66,7 @@ static const adc_unit_t unit = ADC_UNIT_1;
    If you'd rather not, just change the below entries to strings with
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
-#define EXAMPLE_ESP_WIFI_SSID      "roboy"
+#define EXAMPLE_ESP_WIFI_SSID      "roboyFair"
 #define EXAMPLE_ESP_WIFI_PASS      "wiihackroboy"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  10
 
@@ -158,7 +160,7 @@ static void command_task(void *pvParameters)
     int addr_family;
     int ip_protocol;
 
-    command_frame.setpoint = 100;
+    command_frame.setpoint = DEFAULT_SETPOINT;
 
     while (1) {
 
@@ -241,7 +243,7 @@ static void status_task(void *pvParameters)
     t0_vel = esp_timer_get_time();
     int pos_prev = 0;
 
-    id = (gpio_get_level(18)<<4|gpio_get_level(5)<<3|gpio_get_level(17)<<2|gpio_get_level(16)<<1|gpio_get_level(4));
+//    id = (gpio_get_level(18)<<4|gpio_get_level(5)<<3|gpio_get_level(17)<<2|gpio_get_level(16)<<1|gpio_get_level(4));
     printf("my id is %d %d %d %d %d-> %d\n", gpio_get_level(18),gpio_get_level(5),gpio_get_level(17),gpio_get_level(16),gpio_get_level(4),id);
     status_frame.motor = id;
     command_frame.motor = id;
@@ -391,9 +393,13 @@ void servo_task(void *ignore) {
                 error = status_frame.vel-command_frame.setpoint;         // Calculate error
                 break;
             case 2:
-                if(command_frame.setpoint>=0)
+                if(command_frame.setpoint>=0) {
+#ifndef MIRRORED
                     error = status_frame.dis - command_frame.setpoint;         // Calculate error
-                else
+#else
+                    error = -(status_frame.dis - command_frame.setpoint);         // Calculate error
+#endif
+                }else
                     error = 0;
                 break;
             default:
@@ -401,6 +407,7 @@ void servo_task(void *ignore) {
         }
 
         output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
+
         if(output > 1000)
             output = 1000;            // Clamp output
         if(output < -1000)
