@@ -727,56 +727,56 @@ $EndComp
 NoConn ~ 8600 1900
 NoConn ~ 3850 3075
 $Comp
-L Mechanical:MountingHole H1
+L Mechanical:MountingHole H?
 U 1 1 5DDBEBB0
 P 8650 2575
-F 0 "H1" H 8750 2621 50  0000 L CNN
+F 0 "H?" H 8750 2621 50  0000 L CNN
 F 1 "MountingHole" H 8750 2530 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.2mm_M2_Pad" H 8650 2575 50  0001 C CNN
+F 2 "" H 8650 2575 50  0001 C CNN
 F 3 "~" H 8650 2575 50  0001 C CNN
 	1    8650 2575
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:MountingHole H2
+L Mechanical:MountingHole H?
 U 1 1 5DDC1C0E
 P 8650 2800
-F 0 "H2" H 8750 2846 50  0000 L CNN
+F 0 "H?" H 8750 2846 50  0000 L CNN
 F 1 "MountingHole" H 8750 2755 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.2mm_M2_Pad" H 8650 2800 50  0001 C CNN
+F 2 "" H 8650 2800 50  0001 C CNN
 F 3 "~" H 8650 2800 50  0001 C CNN
 	1    8650 2800
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:MountingHole H3
+L Mechanical:MountingHole H?
 U 1 1 5DDC1E70
 P 8650 3600
-F 0 "H3" H 8750 3646 50  0000 L CNN
+F 0 "H?" H 8750 3646 50  0000 L CNN
 F 1 "LABEL" H 8750 3555 50  0000 L CNN
-F 2 "custom_lib:R1_ear_silk_5.5mm" H 8650 3600 50  0001 C CNN
+F 2 "" H 8650 3600 50  0001 C CNN
 F 3 "~" H 8650 3600 50  0001 C CNN
 	1    8650 3600
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:MountingHole H4
+L Mechanical:MountingHole H?
 U 1 1 5DDC2316
 P 8650 3825
-F 0 "H4" H 8750 3871 50  0000 L CNN
+F 0 "H?" H 8750 3871 50  0000 L CNN
 F 1 "LABEL" H 8750 3780 50  0000 L CNN
-F 2 "custom_lib:R1_eyes_mask_5.5mm" H 8650 3825 50  0001 C CNN
+F 2 "" H 8650 3825 50  0001 C CNN
 F 3 "~" H 8650 3825 50  0001 C CNN
 	1    8650 3825
 	1    0    0    -1  
 $EndComp
 $Comp
-L Mechanical:MountingHole H5
+L Mechanical:MountingHole H?
 U 1 1 5DDC2626
 P 8650 4050
-F 0 "H5" H 8750 4096 50  0000 L CNN
+F 0 "H?" H 8750 4096 50  0000 L CNN
 F 1 "LABEL" H 8750 4005 50  0000 L CNN
-F 2 "custom_lib:R1_face_mask_5.5mm" H 8650 4050 50  0001 C CNN
+F 2 "" H 8650 4050 50  0001 C CNN
 F 3 "~" H 8650 4050 50  0001 C CNN
 	1    8650 4050
 	1    0    0    -1  
