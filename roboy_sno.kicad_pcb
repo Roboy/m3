@@ -1,4 +1,4 @@
-(kicad_pcb (version 20171130) (host pcbnew 5.1.5-52549c5~84~ubuntu18.04.1)
+(kicad_pcb (version 20171130) (host pcbnew 5.0.2-bee76a0~70~ubuntu18.04.1)
 
   (general
     (thickness 1.6)
@@ -39,6 +39,8 @@
     (zone_clearance 0.508)
     (zone_45_only no)
     (trace_min 0.1524)
+    (segment_width 0.2)
+    (edge_width 0.15)
     (via_size 0.301)
     (via_drill 0.3)
     (via_min_size 0.3)
@@ -48,8 +50,6 @@
     (uvias_allowed no)
     (uvia_min_size 0.2)
     (uvia_min_drill 0.1)
-    (edge_width 0.15)
-    (segment_width 0.2)
     (pcb_text_width 0.3)
     (pcb_text_size 1.5 1.5)
     (mod_edge_width 0.15)
@@ -934,6 +934,11 @@
       (net 37 E1))
     (pad 1 smd rect (at -1.55 1.4 270) (size 1.5 0.7) (layers B.Cu B.Paste B.Mask)
       (net 38 E0))
+    (model ${KIPRJMOD}/kicad_db/_3Dmodels/vishay_tcut1350x01.stp
+      (at (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (module Resistor_SMD:R_0402_1005Metric (layer F.Cu) (tedit 5B301BBD) (tstamp 5DD7F441)
