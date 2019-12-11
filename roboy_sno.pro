@@ -1,4 +1,4 @@
-update=Fri 22 Nov 2019 10:14:50 AM CET
+update=Di 10 Dez 2019 21:50:24 CET
 version=1
 last_client=kicad
 [general]
@@ -237,7 +237,7 @@ Enabled=0
 [pcbnew/Netclasses]
 [pcbnew/Netclasses/Default]
 Name=Default
-Clearance=0.12
+Clearance=0.1524
 TrackWidth=0.1524
 ViaDiameter=0.301
 ViaDrill=0.3
@@ -247,20 +247,9 @@ dPairWidth=0.2
 dPairGap=0.25
 dPairViaGap=0.25
 [pcbnew/Netclasses/1]
-Name=FPGA
-Clearance=0.12
-TrackWidth=0.1524
-ViaDiameter=0.301
-ViaDrill=0.3
-uViaDiameter=0.3
-uViaDrill=0.1
-dPairWidth=0.2
-dPairGap=0.25
-dPairViaGap=0.25
-[pcbnew/Netclasses/2]
 Name=POWER
 Clearance=0.1524
-TrackWidth=0.3
+TrackWidth=0.3048
 ViaDiameter=0.301
 ViaDrill=0.3
 uViaDiameter=0.3
