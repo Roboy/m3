@@ -1,5 +1,6 @@
 EESchema Schematic File Version 4
-EELAYER 30 0
+LIBS:roboy_sno-cache
+EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -103,14 +104,14 @@ $Comp
 L Switch:SW_Push SW2
 U 1 1 5CD5B563
 P 2150 2925
-F 0 "SW2" H 2150 2850 50  0000 C CNN
+F 0 "SW2" H 2150 2875 50  0000 C CNN
 F 1 "BOOT" H 2150 3050 50  0000 C CNN
 F 2 "custom_lib:PTS815-SJK" H 2150 3125 50  0001 C CNN
 F 3 "" H 2150 3125 50  0001 C CNN
 	1    2150 2925
 	1    0    0    -1  
 $EndComp
-Text GLabel 3750 3225 2    50   Input ~ 0
+Text GLabel 3750 2925 2    50   Input ~ 0
 MOTOR
 Text GLabel 3750 3325 2    50   Input ~ 0
 MOTOR_SENSE
@@ -324,55 +325,6 @@ F 3 "" H 2150 2325 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L Connector:Conn_01x06_Female J1
-U 1 1 5DDF6547
-P 5525 2000
-F 0 "J1" H 5553 1976 50  0000 L CNN
-F 1 "200AMA16R" H 5553 1885 50  0000 L CNN
-F 2 "custom_lib:200AMA16R" H 5525 2000 50  0001 C CNN
-F 3 "~" H 5525 2000 50  0001 C CNN
-	1    5525 2000
-	1    0    0    -1  
-$EndComp
-Text GLabel 5325 1800 0    50   Input ~ 0
-ID0
-Text GLabel 5325 2000 0    50   Input ~ 0
-ID2
-Text GLabel 5325 2100 0    50   Input ~ 0
-ID1
-Text GLabel 5325 2300 0    50   Input ~ 0
-ID3
-$Comp
-L power:GND #PWR0124
-U 1 1 5DDFAD47
-P 5325 1900
-F 0 "#PWR0124" H 5325 1650 50  0001 C CNN
-F 1 "GND" V 5330 1772 50  0000 R CNN
-F 2 "" H 5325 1900 50  0001 C CNN
-F 3 "" H 5325 1900 50  0001 C CNN
-	1    5325 1900
-	0    1    1    0   
-$EndComp
-$Comp
-L power:GND #PWR0125
-U 1 1 5DDFB1A2
-P 5325 2200
-F 0 "#PWR0125" H 5325 1950 50  0001 C CNN
-F 1 "GND" V 5330 2072 50  0000 R CNN
-F 2 "" H 5325 2200 50  0001 C CNN
-F 3 "" H 5325 2200 50  0001 C CNN
-	1    5325 2200
-	0    1    1    0   
-$EndComp
-Text GLabel 3750 3025 2    50   Input ~ 0
-ID0
-Text GLabel 2350 3125 0    50   Input ~ 0
-ID1
-Text GLabel 2350 3225 0    50   Input ~ 0
-ID2
-Text GLabel 3750 2925 2    50   Input ~ 0
-ID3
-$Comp
 L Connector:Conn_01x06_Female J4
 U 1 1 5DE03A3E
 P 7050 3775
@@ -468,7 +420,7 @@ Wire Wire Line
 	6700 3675 6325 3675
 Text GLabel 3750 3125 2    50   Input ~ 0
 E0
-Text GLabel 2350 3025 0    50   Input ~ 0
+Text GLabel 3750 3025 2    50   Input ~ 0
 E1
 NoConn ~ 8600 1900
 $Comp
@@ -568,7 +520,6 @@ F 3 "" H 6850 3775 50  0001 C CNN
 	1    6850 3775
 	0    -1   -1   0   
 $EndComp
-NoConn ~ 2350 2725
 $Comp
 L ESP-WROOM-02U:ESP-WROOM-02U U2
 U 1 1 5DE72B48
@@ -702,4 +653,80 @@ F 3 "~" H 7225 2150 50  0001 C CNN
 	1    7225 2150
 	-1   0    0    1   
 $EndComp
+$Comp
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
+U 1 1 5E0E3E94
+P 1600 3025
+AR Path="/5ABCD2F9/5E0E3E94" Ref="R?"  Part="1" 
+AR Path="/5E0E3E94" Ref="R5"  Part="1" 
+F 0 "R5" V 1725 3125 50  0000 R CNN
+F 1 "10k" V 1600 3075 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 1530 3025 50  0001 C CNN
+F 3 "~" H 1600 3025 50  0001 C CNN
+	1    1600 3025
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	2350 3025 1750 3025
+$Comp
+L power:+3.3V #PWR0124
+U 1 1 5E0E4596
+P 1450 3025
+F 0 "#PWR0124" H 1450 2875 50  0001 C CNN
+F 1 "+3.3V" H 1465 3198 50  0000 C CNN
+F 2 "" H 1450 3025 50  0001 C CNN
+F 3 "" H 1450 3025 50  0001 C CNN
+	1    1450 3025
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR0125
+U 1 1 5E0E47ED
+P 4050 3225
+F 0 "#PWR0125" H 4050 2975 50  0001 C CNN
+F 1 "GND" V 4050 3025 50  0000 C CNN
+F 2 "" H 4050 3225 50  0001 C CNN
+F 3 "" H 4050 3225 50  0001 C CNN
+	1    4050 3225
+	0    -1   -1   0   
+$EndComp
+$Comp
+L roboy_sno-rescue:R-Device-roboy_sno-rescue R?
+U 1 1 5E0E4944
+P 3900 3225
+AR Path="/5ABCD2F9/5E0E4944" Ref="R?"  Part="1" 
+AR Path="/5E0E4944" Ref="R6"  Part="1" 
+F 0 "R6" V 4000 3150 50  0000 R CNN
+F 1 "10k" V 3900 3275 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 3830 3225 50  0001 C CNN
+F 3 "~" H 3900 3225 50  0001 C CNN
+	1    3900 3225
+	0    -1   -1   0   
+$EndComp
+NoConn ~ 2350 3125
+NoConn ~ 2350 3225
+$Comp
+L Switch:SW_Push SW1
+U 1 1 5E0E6B99
+P 1150 2725
+F 0 "SW1" H 1150 2675 50  0000 C CNN
+F 1 "RESET" H 1150 2850 50  0000 C CNN
+F 2 "custom_lib:PTS815-SJK" H 1150 2925 50  0001 C CNN
+F 3 "" H 1150 2925 50  0001 C CNN
+	1    1150 2725
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0127
+U 1 1 5E0E6B9F
+P 950 2725
+F 0 "#PWR0127" H 950 2475 50  0001 C CNN
+F 1 "GND" H 955 2552 50  0000 C CNN
+F 2 "" H 950 2725 50  0001 C CNN
+F 3 "" H 950 2725 50  0001 C CNN
+	1    950  2725
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	2350 2725 1350 2725
 $EndSCHEMATC
