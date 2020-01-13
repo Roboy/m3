@@ -68,8 +68,6 @@ Connection ~ 7450 1700
 Wire Wire Line
 	7600 1900 7700 1900
 Wire Wire Line
-	7450 1700 7225 1700
-Wire Wire Line
 	8975 1700 8875 1700
 Connection ~ 8850 1700
 Wire Wire Line
@@ -111,9 +109,9 @@ F 3 "" H 2150 3125 50  0001 C CNN
 	1    2150 2925
 	1    0    0    -1  
 $EndComp
-Text GLabel 3750 2925 2    50   Input ~ 0
+Text GLabel 2350 3225 0    50   Input ~ 0
 MOTOR
-Text GLabel 3750 3325 2    50   Input ~ 0
+Text GLabel 2350 3125 0    50   Input ~ 0
 MOTOR_SENSE
 $Comp
 L Connector:Conn_01x04_Male J2
@@ -394,7 +392,7 @@ L Device:R R3
 U 1 1 5DE103FF
 P 6350 4350
 F 0 "R3" V 6557 4350 50  0000 C CNN
-F 1 "1k" V 6466 4350 50  0000 C CNN
+F 1 "47" V 6466 4350 50  0000 C CNN
 F 2 "Resistor_SMD:R_0402_1005Metric" V 6280 4350 50  0001 C CNN
 F 3 "~" H 6350 4350 50  0001 C CNN
 	1    6350 4350
@@ -626,9 +624,6 @@ F 3 "~" H 7225 1850 50  0001 C CNN
 	1    7225 1850
 	0    -1   -1   0   
 $EndComp
-Connection ~ 7225 1700
-Wire Wire Line
-	7225 1700 7200 1700
 $Comp
 L power:GND #PWR0123
 U 1 1 5DF1C008
@@ -703,8 +698,6 @@ F 3 "~" H 3900 3225 50  0001 C CNN
 	1    3900 3225
 	0    -1   -1   0   
 $EndComp
-NoConn ~ 2350 3125
-NoConn ~ 2350 3225
 $Comp
 L Switch:SW_Push SW1
 U 1 1 5E0E6B99
@@ -729,4 +722,11 @@ F 3 "" H 950 2725 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	2350 2725 1350 2725
+NoConn ~ 3750 3325
+Connection ~ 7225 1700
+Wire Wire Line
+	7225 1700 7200 1700
+Wire Wire Line
+	7450 1700 7225 1700
+NoConn ~ 3750 2925
 $EndSCHEMATC
