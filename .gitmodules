@@ -13,3 +13,6 @@
 [submodule "esp/m3_control/src/Adafruit_NeoPixel"]
 	path = esp/m3_control/src/Adafruit_NeoPixel
 	url = https://github.com/adafruit/Adafruit_NeoPixel
+[submodule "m3/ESP8266_RTOS_SDK"]
+	path = m3/ESP8266_RTOS_SDK
+	url = https://github.com/espressif/ESP8266_RTOS_SDK

@@ -25,7 +25,7 @@ static int64_t t0 = 0, t1 = 0;
 static char tag[] = "servo1";
 //#define MIRRORED
 #define DEFAULT_SETPOINT 500
-static int id = 11;
+static int id = 2;
 static int displacement_offset = 0;
 
 struct{
@@ -51,7 +51,7 @@ struct{
 
 static xQueueHandle gpio_evt_queue = NULL;
 
-#define HOST_IP_ADDR "192.168.0.255"
+#define HOST_IP_ADDR "192.168.255.255"
 #define PORT 8000
 
 #define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
@@ -66,7 +66,7 @@ static const adc_unit_t unit = ADC_UNIT_1;
    If you'd rather not, just change the below entries to strings with
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
-#define EXAMPLE_ESP_WIFI_SSID      "roboyFair"
+#define EXAMPLE_ESP_WIFI_SSID      "roboy"
 #define EXAMPLE_ESP_WIFI_PASS      "wiihackroboy"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  10
 
