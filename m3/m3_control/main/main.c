@@ -308,57 +308,90 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 }
 
 void servo_task(void *ignore) {
-    int zeroSpeed       = 2450;
+    int zeroSpeed       = 610;
+    ledc_timer_config_t ledc_timer = {
+            .duty_resolution = LEDC_TIMER_15_BIT, // resolution of PWM duty
+            .freq_hz = 50,                      // frequency of PWM signal
+            .speed_mode = LEDC_HIGH_SPEED_MODE,           // timer mode
+            .timer_num = LEDC_TIMER_0            // timer index
+    };
+    ledc_timer_config(&ledc_timer);
+
+    ledc_channel_config_t ledc_conf = {
+            .channel    = LEDC_CHANNEL_0,
+            .duty       = 0,
+            .gpio_num   = 5,
+            .speed_mode = LEDC_HIGH_SPEED_MODE,
+            .hpoint     = 0,
+            .timer_sel  = LEDC_TIMER_0
+    };
+    ledc_channel_config(&ledc_conf);
+
+    ledc_fade_func_install(0);
+
+    esp_log_level_set("ledc", ESP_LOG_NONE);
 
     //
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 1000);
+    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed);
     ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-
-//    vTaskDelay(pdMS_TO_TICKS(1000));
+//    int pos = 0;
 //
-//    control_frame.mode = 2;
-//    control_frame.Kp = 1;
-//    control_frame.Ki = 0;
-//    control_frame.Kd = 0;
-//
-//    status_frame.vel = 0;
-//    float error_prev = 0;
-//    while(1) {
-//        float error, output;             // Control system variables
-//        switch(control_frame.mode){
-//            case 0:
-//                error = status_frame.pos-command_frame.setpoint;         // Calculate error
-//                break;
-//            case 1:
-//                error = status_frame.vel-command_frame.setpoint;         // Calculate error
-//                break;
-//            case 2:
-//                if(command_frame.setpoint>=0) {
-//#ifndef MIRRORED
-//                    error = status_frame.dis - command_frame.setpoint;         // Calculate error
-//#else
-//                    error = -(status_frame.dis - command_frame.setpoint);         // Calculate error
-//#endif
-//                }else
-//                    error = 0;
-//                break;
-//            default:
-//                error = 0;
-//        }
-//
-//        output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
-//
-//        if(output > 1000)
-//            output = 1000;            // Clamp output
-//        if(output < -1000)
-//            output = -1000;
-//        status_frame.vel = output;
-//        ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
+//    for(int i=0;i<32768;i+=10){
+//        ESP_LOGI("duty", "duty = %d", i);
+//        ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, i);
 //        ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-//        status_frame.pwm = output;
-//        vTaskDelay(pdMS_TO_TICKS(3));
-//        error_prev = error;
-//    } // End loop forever
+//        if(status_frame.pos==pos)
+//            vTaskDelay(pdMS_TO_TICKS(1000));
+//        else
+//            vTaskDelay(pdMS_TO_TICKS(100));
+//
+//        pos = status_frame.pos;
+//    }
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    control_frame.mode = 2;
+    control_frame.Kp = 1;
+    control_frame.Ki = 0;
+    control_frame.Kd = 0;
+
+    status_frame.vel = 0;
+    float error_prev = 0;
+    while(1) {
+        float error, output;             // Control system variables
+        switch(control_frame.mode){
+            case 0:
+                error = status_frame.pos-command_frame.setpoint;         // Calculate error
+                break;
+            case 1:
+                error = status_frame.vel-command_frame.setpoint;         // Calculate error
+                break;
+            case 2:
+                if(command_frame.setpoint>=0) {
+#ifndef MIRRORED
+                    error = status_frame.dis - command_frame.setpoint;         // Calculate error
+#else
+                    error = -(status_frame.dis - command_frame.setpoint);         // Calculate error
+#endif
+                }else
+                    error = 0;
+                break;
+            default:
+                error = 0;
+        }
+
+        output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
+
+        if(output > 50)
+            output = 50;            // Clamp output
+        if(output < -50)
+            output = -50;
+        ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
+        ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
+        status_frame.pwm = output;
+        vTaskDelay(pdMS_TO_TICKS(100));
+        error_prev = error;
+    } // End loop forever
 
     vTaskDelete(NULL);
 }
@@ -382,7 +415,7 @@ void feedback360_task()                            // Cog keeps angle variable u
     theta = (unitsFC - 1) - ((dc - dcMin) * unitsFC) / (dcMax - dcMin + 1);
     thetaP = theta;
 
-    int io_num = 21;
+    int io_num = 4;
 
     int pos = 0, pos_offset = 0;
     bool first = true;
@@ -443,131 +476,44 @@ void feedback360_task()                            // Cog keeps angle variable u
             status_frame.pos = pos-pos_offset;
         }
 
-        ESP_LOGD("timer", "angle = %d", status_frame.pos);
+//        ESP_LOGD("timer", "angle = %d", status_frame.pos);
 
         thetaP = theta;                           // Theta previous for next rep
     }
 }
 
-//#define LEDC_HS_TIMER          LEDC_TIMER_0
-//#define LEDC_HS_MODE           LEDC_HIGH_SPEED_MODE
-//#define LEDC_HS_CH0_GPIO       (12)
-//#define LEDC_HS_CH0_CHANNEL    LEDC_CHANNEL_0
-//
-//#define LEDC_TEST_CH_NUM       (1)
-//#define LEDC_TEST_DUTY         (4096)
-//#define LEDC_TEST_FADE_TIME    (3000)
-//
-//void app_main()
-//{
-//    int ch;
-//
-//    /*
-//     * Prepare and set configuration of timers
-//     * that will be used by LED Controller
-//     */
-//    ledc_timer_config_t ledc_timer = {
-//            .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
-//            .freq_hz = 5000,                      // frequency of PWM signal
-//            .speed_mode = LEDC_HS_MODE,           // timer mode
-//            .timer_num = LEDC_HS_TIMER            // timer index
-//    };
-//    // Set configuration of timer0 for high speed channels
-//    ledc_timer_config(&ledc_timer);
-//
-//    /*
-//     * Prepare individual configuration
-//     * for each channel of LED Controller
-//     * by selecting:
-//     * - controller's channel number
-//     * - output duty cycle, set initially to 0
-//     * - GPIO number where LED is connected to
-//     * - speed mode, either high or low
-//     * - timer servicing selected channel
-//     *   Note: if different channels use one timer,
-//     *         then frequency and bit_num of these channels
-//     *         will be the same
-//     */
-//    ledc_channel_config_t ledc_channel[1] = {
-//            {
-//                    .channel    = LEDC_HS_CH0_CHANNEL,
-//                    .duty       = 0,
-//                    .gpio_num   = LEDC_HS_CH0_GPIO,
-//                    .speed_mode = LEDC_HS_MODE,
-//                    .hpoint     = 0,
-//                    .timer_sel  = LEDC_HS_TIMER
-//            }
-//    };
-//
-//    // Set LED Controller with previously prepared configuration
-//    for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++) {
-//        ledc_channel_config(&ledc_channel[ch]);
-//    }
-//
-//    // Initialize fade service.
-//    ledc_fade_func_install(0);
-//
-//    while (1) {
-//        printf("3. LEDC set duty = %d without fade\n", LEDC_TEST_DUTY);
-//        for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++) {
-//            ledc_set_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel, LEDC_TEST_DUTY);
-//            ledc_update_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel);
-//        }
-//        vTaskDelay(1000 / portTICK_PERIOD_MS);
-//    }
-//}
-
 void app_main()
 {
-//    gpio_config_t io_conf;
-//    //disable interrupt
-//    io_conf.intr_type = GPIO_INTR_ANYEDGE;
-//    //set as output mode
-//    io_conf.mode = GPIO_MODE_INPUT;
-//    //bit mask of the pins that you want to set,e.g.GPIO18/19
-//    io_conf.pin_bit_mask = (1ULL<<16);
-//    //disable pull-down mode
-//    io_conf.pull_down_en = 0;
-//    //disable pull-up mode
-//    io_conf.pull_up_en = 0;
-//    gpio_config(&io_conf);
-//
-//    //create a queue to handle gpio event from isr
-//    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
+    gpio_config_t io_conf;
+    //disable interrupt
+    io_conf.intr_type = GPIO_INTR_ANYEDGE;
+    //set as output mode
+    io_conf.mode = GPIO_MODE_INPUT;
+    //bit mask of the pins that you want to set,e.g.GPIO18/19
+    io_conf.pin_bit_mask = (1ULL<<4);
+    //disable pull-down mode
+    io_conf.pull_down_en = 0;
+    //disable pull-up mode
+    io_conf.pull_up_en = 0;
+    gpio_config(&io_conf);
 
-    ledc_timer_config_t ledc_timer = {
-            .duty_resolution = LEDC_TIMER_12_BIT, // resolution of PWM duty
-            .freq_hz = 1000,                      // frequency of PWM signal
-            .speed_mode = LEDC_HIGH_SPEED_MODE,           // timer mode
-            .timer_num = LEDC_TIMER_0            // timer index
-    };
-    ledc_timer_config(&ledc_timer);
+    //create a queue to handle gpio event from isr
+    gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
 
-    ledc_channel_config_t ledc_conf = {
-            .channel    = LEDC_CHANNEL_0,
-            .duty       = 1000,
-            .gpio_num   = 12,
-            .speed_mode = LEDC_HIGH_SPEED_MODE,
-            .hpoint     = 0,
-            .timer_sel  = LEDC_TIMER_0
-
-    };
-    ledc_channel_config(&ledc_conf);
-
-    ledc_fade_func_install(0);
-
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, 1000);
-    ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
+    //install gpio isr service
+    gpio_install_isr_service(0);
+    //hook isr handler for specific gpio pin
+    gpio_isr_handler_add(4, gpio_isr_handler, (void*) 4);
 
     wifi_init_sta();
 //    xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
 //    printf("displacement_task started\n");
-//    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
-//    printf("feedback360_task started\n");
-//    xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
-//    printf("status_task started\n");
-//    xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
-//    printf("command_task started\n");
-//    xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
-//    printf("servo_task started\n");
+    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
+    printf("feedback360_task started\n");
+    xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
+    printf("status_task started\n");
+    xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
+    printf("command_task started\n");
+    xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
+    printf("servo_task started\n");
 }
