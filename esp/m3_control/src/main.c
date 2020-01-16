@@ -22,11 +22,11 @@
 
 static int64_t t0 = 0, t1 = 0;
 
-static char tag[] = "servo1";
 //#define MIRRORED
 #define DEFAULT_SETPOINT 500
-static int id = 2;
+static int id = 5;
 static int displacement_offset = 0;
+static float integral = 0;
 
 struct{
     int32_t motor;
@@ -208,7 +208,9 @@ static void command_task(void *pvParameters)
                         command_frame.setpoint = status_frame.pos;
                     }else if(mode == 1){
                         command_frame.setpoint = 0;
-                    }else if(mode ==2){
+                    }else if(mode == 2){
+                        command_frame.setpoint = 0;
+                    }else if(mode == 3){
                         command_frame.setpoint = 0;
                     }
                     control_frame.mode = mode;
@@ -239,9 +241,9 @@ static void status_task(void *pvParameters)
     int ip_protocol;
     status_frame.vel = 0;
 
-    int64_t t0_vel = 0, t1_vel = 0;
-    t0_vel = esp_timer_get_time();
-    int pos_prev = 0;
+//    int64_t t0_vel = 0, t1_vel = 0;
+//    t0_vel = esp_timer_get_time();
+//    int pos_prev = 0;
 
 //    id = (gpio_get_level(18)<<4|gpio_get_level(5)<<3|gpio_get_level(17)<<2|gpio_get_level(16)<<1|gpio_get_level(4));
     printf("my id is %d %d %d %d %d-> %d\n", gpio_get_level(18),gpio_get_level(5),gpio_get_level(17),gpio_get_level(16),gpio_get_level(4),id);
@@ -265,21 +267,21 @@ static void status_task(void *pvParameters)
         }
 
         while (1) {
-            t1_vel = esp_timer_get_time();
+//            t1_vel = esp_timer_get_time();
             int err = sendto(sock, (char*)&status_frame, sizeof(status_frame), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
             if (err < 0) {
 //                ESP_LOGE(TAG, "Error occurred during sending: errno %d", errno);
                 break;
             }
             ESP_LOGD(TAG, "Message sent");
-            vTaskDelay(200 / portTICK_PERIOD_MS);
-            float dt = (t1_vel-t0_vel)/1000000.0f; // in s
-            float vel = (dt>0?(status_frame.pos-pos_prev)/dt:0);
+            vTaskDelay(20 / portTICK_PERIOD_MS);
+//            float dt = (t1_vel-t0_vel)/1000000.0f; // in s
+//            float vel = (dt>0?(status_frame.pos-pos_prev)/dt:0);
 //            status_frame.vel = vel;
 
 //            ESP_LOGI("vel", "%f %f",vel, dt);
-            pos_prev = status_frame.pos;
-            t0_vel = t1_vel;
+//            pos_prev = status_frame.pos;
+//            t0_vel = t1_vel;
         }
 
         if (sock != -1) {
@@ -377,37 +379,47 @@ void servo_task(void *ignore) {
     vTaskDelay(pdMS_TO_TICKS(1000));
 
     control_frame.mode = 2;
-    control_frame.Kp = 1;
-    control_frame.Ki = 0;
+    control_frame.Kp = 30;
+    control_frame.Ki = 30;
     control_frame.Kd = 0;
 
     status_frame.vel = 0;
     float error_prev = 0;
     while(1) {
-        float error, output;             // Control system variables
-        switch(control_frame.mode){
-            case 0:
-                error = status_frame.pos-command_frame.setpoint;         // Calculate error
-                break;
-            case 1:
-                error = status_frame.vel-command_frame.setpoint;         // Calculate error
-                break;
-            case 2:
-                if(command_frame.setpoint>=0) {
+        float error = 0, output = 0;             // Control system variables
+        if(control_frame.mode!=3) {
+            switch (control_frame.mode) {
+                case 0:
+                    error = status_frame.pos - command_frame.setpoint;         // Calculate error
+                    break;
+                case 1:
+                    error = status_frame.vel - command_frame.setpoint;         // Calculate error
+                    break;
+                case 2:
+                    if (command_frame.setpoint >= 0) {
 #ifndef MIRRORED
-                    error = status_frame.dis - command_frame.setpoint;         // Calculate error
+                        error = status_frame.dis - command_frame.setpoint;         // Calculate error
 #else
-                    error = -(status_frame.dis - command_frame.setpoint);         // Calculate error
+                        error = -(status_frame.dis - command_frame.setpoint);         // Calculate error
 #endif
-                }else
+                    } else
+                        error = 0;
+                    break;
+                default:
                     error = 0;
-                break;
-            default:
-                error = 0;
+            }
+            integral += error;
+            if(integral>100)
+                integral = 100;
+            if(integral<-100)
+                integral = -100;
+
+            output = error * control_frame.Kp/100.0f +
+                     (error - error_prev) * control_frame.Kd/100.0f +
+                     integral * control_frame.Ki/100.0f;
+        }else{
+            output = command_frame.setpoint;
         }
-
-        output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
-
         if(output > 1000)
             output = 1000;            // Clamp output
         if(output < -1000)
