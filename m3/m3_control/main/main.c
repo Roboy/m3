@@ -20,12 +20,12 @@
 #include "esp_event_loop.h"
 
 static int64_t t0 = 0, t1 = 0;
-
-static char tag[] = "servo1";
 //#define MIRRORED
 #define DEFAULT_SETPOINT 500
-static int id = 2;
+static int id = 6;
 static int displacement_offset = 0;
+
+static bool E0, E1;
 
 struct{
     int32_t motor;
@@ -76,27 +76,6 @@ static EventGroupHandle_t wifi_event_group;
 
 static int s_retry_num = 0;
 
-void displacement_task(void *ignore){
-    status_frame.dis = 0;
-
-
-    //Continuously sample ADC1
-    while (1) {
-//        uint32_t adc_reading = 0;
-//        //Multisampling
-//        for (int i = 0; i < NO_OF_SAMPLES; i++) {
-//            adc_reading += adc1_get_raw((adc1_channel_t)channel);
-//        }
-//        adc_reading /= NO_OF_SAMPLES;
-//        if ( ((int)adc_reading-displacement_offset) < 0 ) {
-//            displacement_offset = adc_reading;
-////            printf("%d\n",displacement_offset);
-//        }
-//        status_frame.dis = adc_reading-displacement_offset;
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-}
-
 static void command_task(void *pvParameters)
 {
     char rx_buffer[128];
@@ -138,7 +117,7 @@ static void command_task(void *pvParameters)
                 if(m==command_frame.motor){
                     memcpy(&command_frame.setpoint,rx_buffer,4);
                 }
-                ESP_LOGI(TAG,"Received command_frame for motor %d with setpoint %d", m, command_frame.setpoint);
+                //ESP_LOGI(TAG,"Received command_frame for motor %d with setpoint %d", m, command_frame.setpoint);
             }else if(len == 20){
                 int m,kp,ki,kd,mode;
                 memcpy(&m,&rx_buffer[16],4);
@@ -158,7 +137,7 @@ static void command_task(void *pvParameters)
                     control_frame.Kp = kp;
                     control_frame.Ki = ki;
                     control_frame.Kd = kd;
-                    ESP_LOGI(TAG, "Received control_frame for motor %d mode %d kp %d ki %d kd %d", m, mode, kp, ki, kd);
+                    //ESP_LOGI(TAG, "Received control_frame for motor %d mode %d kp %d ki %d kd %d", m, mode, kp, ki, kd);
 //                if(m==command_frame.motor){
 //                    memcpy(&command_frame.setpoint,rx_buffer,4);
 //                }
@@ -188,6 +167,7 @@ static void status_task(void *pvParameters)
 
     printf("my id is %d\n", id);
     status_frame.motor = id;
+    status_frame.dis = 0;
     command_frame.motor = id;
 
     while (1) {
@@ -214,14 +194,15 @@ static void status_task(void *pvParameters)
                 break;
             }
             ESP_LOGD(TAG, "Message sent");
-            vTaskDelay(200 / portTICK_PERIOD_MS);
-            float dt = (t1_vel-t0_vel)/1000000.0f; // in s
+            float dt = (t1_vel-t0_vel)/1000.0f; // ticks per/ms
             float vel = (dt>0?(status_frame.pos-pos_prev)/dt:0);
-//            status_frame.vel = vel;
+            status_frame.vel = vel;
 
 //            ESP_LOGI("vel", "%f %f",vel, dt);
             pos_prev = status_frame.pos;
             t0_vel = t1_vel;
+            vTaskDelay(200 / portTICK_PERIOD_MS);
+            ESP_LOGI("interrupt", "%d %d",E0,E1);
         }
 
         if (sock != -1) {
@@ -305,6 +286,48 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
         t0 = esp_timer_get_time();
     else
         t1 = esp_timer_get_time();
+}
+
+static void IRAM_ATTR gpio_isr_handler_E0(void* arg)
+{
+    uint32_t gpio_num = (uint32_t) arg;
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+    if(gpio_get_level(gpio_num)==0){
+        E0 = false;
+        if(E1){
+          status_frame.dis++;
+        }else{
+          status_frame.dis--;
+        }
+    }else{
+        E0 = true;
+        if(!E1){
+          status_frame.dis++;
+        }else{
+          status_frame.dis--;
+        }
+    }
+}
+
+static void IRAM_ATTR gpio_isr_handler_E1(void* arg)
+{
+    uint32_t gpio_num = (uint32_t) arg;
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
+    if(gpio_get_level(gpio_num)==0){
+        E1 = false;
+        if(!E0){
+          status_frame.dis++;
+        }else{
+          status_frame.dis--;
+        }
+    }else{
+        E1 = true;
+        if(E0){
+          status_frame.dis++;
+        }else{
+          status_frame.dis--;
+        }
+    }
 }
 
 void servo_task(void *ignore) {
@@ -490,7 +513,7 @@ void app_main()
     //set as output mode
     io_conf.mode = GPIO_MODE_INPUT;
     //bit mask of the pins that you want to set,e.g.GPIO18/19
-    io_conf.pin_bit_mask = (1ULL<<4);
+    io_conf.pin_bit_mask = (1ULL<<4|1ULL<<13|1ULL<<14);
     //disable pull-down mode
     io_conf.pull_down_en = 0;
     //disable pull-up mode
@@ -504,6 +527,9 @@ void app_main()
     gpio_install_isr_service(0);
     //hook isr handler for specific gpio pin
     gpio_isr_handler_add(4, gpio_isr_handler, (void*) 4);
+
+    gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
+    gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
 
     wifi_init_sta();
 //    xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
