@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name custom)(type Legacy)(uri /home/letrend/workspace/m3/kicad_db/lib/custom.lib)(options "")(descr ""))
+  (lib (name SN74LVC1G17DCKR)(type Legacy)(uri /home/letrend/workspace/m3/kicad_db/lib/SN74LVC1G17DCKR.lib)(options "")(descr ""))
+)

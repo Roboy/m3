@@ -1,0 +1,194 @@
+EESchema Schematic File Version 4
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Connector:Conn_01x06_Female J1
+U 1 1 5E333D25
+P 3600 3000
+F 0 "J1" H 3628 2976 50  0000 L CNN
+F 1 "pcb_adapter" H 3628 2885 50  0000 L CNN
+F 2 "custom_lib:tcut1350x01" H 3600 3000 50  0001 C CNN
+F 3 "~" H 3600 3000 50  0001 C CNN
+	1    3600 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector:Conn_01x06_Female J2
+U 1 1 5E333D73
+P 5300 3000
+F 0 "J2" H 5328 2976 50  0000 L CNN
+F 1 "real_sensor" H 5328 2885 50  0000 L CNN
+F 2 "custom_lib:tcut1350x01" H 5300 3000 50  0001 C CNN
+F 3 "~" H 5300 3000 50  0001 C CNN
+	1    5300 3000
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR0101
+U 1 1 5E333E4B
+P 3400 2800
+F 0 "#PWR0101" H 3400 2650 50  0001 C CNN
+F 1 "+3.3V" V 3475 2900 50  0000 L CNN
+F 2 "" H 3400 2800 50  0001 C CNN
+F 3 "" H 3400 2800 50  0001 C CNN
+	1    3400 2800
+	0    -1   -1   0   
+$EndComp
+Text Label 3400 3300 2    50   ~ 0
+LED
+NoConn ~ 3400 3200
+$Comp
+L power:GND #PWR0102
+U 1 1 5E333F01
+P 3400 3100
+F 0 "#PWR0102" H 3400 2850 50  0001 C CNN
+F 1 "GND" V 3405 2972 50  0000 R CNN
+F 2 "" H 3400 3100 50  0001 C CNN
+F 3 "" H 3400 3100 50  0001 C CNN
+	1    3400 3100
+	0    1    1    0   
+$EndComp
+Text Label 5100 2800 2    50   ~ 0
+E0
+Text Label 5100 2900 2    50   ~ 0
+E1
+$Comp
+L power:+3.3V #PWR0103
+U 1 1 5E333F1D
+P 5100 3000
+F 0 "#PWR0103" H 5100 2850 50  0001 C CNN
+F 1 "+3.3V" V 5115 3128 50  0000 L CNN
+F 2 "" H 5100 3000 50  0001 C CNN
+F 3 "" H 5100 3000 50  0001 C CNN
+	1    5100 3000
+	0    -1   -1   0   
+$EndComp
+Text Label 5100 3100 2    50   ~ 0
+LED
+NoConn ~ 5100 3200
+$Comp
+L power:GND #PWR0104
+U 1 1 5E333F25
+P 5100 3300
+F 0 "#PWR0104" H 5100 3050 50  0001 C CNN
+F 1 "GND" V 5105 3172 50  0000 R CNN
+F 2 "" H 5100 3300 50  0001 C CNN
+F 3 "" H 5100 3300 50  0001 C CNN
+	1    5100 3300
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:Conn_01x05_Female J3
+U 1 1 5E33430F
+P 7375 2825
+F 0 "J3" H 7402 2851 50  0000 L CNN
+F 1 "Conn_01x05_Female" H 7402 2760 50  0000 L CNN
+F 2 "custom_lib:SC70-5" H 7375 2825 50  0001 C CNN
+F 3 "~" H 7375 2825 50  0001 C CNN
+	1    7375 2825
+	1    0    0    -1  
+$EndComp
+NoConn ~ 7175 2625
+$Comp
+L power:GND #PWR0105
+U 1 1 5E3343AB
+P 7175 2825
+F 0 "#PWR0105" H 7175 2575 50  0001 C CNN
+F 1 "GND" V 7180 2697 50  0000 R CNN
+F 2 "" H 7175 2825 50  0001 C CNN
+F 3 "" H 7175 2825 50  0001 C CNN
+	1    7175 2825
+	0    1    1    0   
+$EndComp
+Text Label 7175 2925 2    50   ~ 0
+E0_filtered
+$Comp
+L power:+3.3V #PWR0106
+U 1 1 5E33443A
+P 7175 3025
+F 0 "#PWR0106" H 7175 2875 50  0001 C CNN
+F 1 "+3.3V" V 7190 3153 50  0000 L CNN
+F 2 "" H 7175 3025 50  0001 C CNN
+F 3 "" H 7175 3025 50  0001 C CNN
+	1    7175 3025
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Connector:Conn_01x05_Female J4
+U 1 1 5E3344EA
+P 7375 3425
+F 0 "J4" H 7402 3451 50  0000 L CNN
+F 1 "Conn_01x05_Female" H 7402 3360 50  0000 L CNN
+F 2 "custom_lib:SC70-5" H 7375 3425 50  0001 C CNN
+F 3 "~" H 7375 3425 50  0001 C CNN
+	1    7375 3425
+	1    0    0    -1  
+$EndComp
+NoConn ~ 7175 3225
+Text Label 6875 3325 2    50   ~ 0
+E1
+$Comp
+L power:GND #PWR0107
+U 1 1 5E3344F2
+P 7175 3425
+F 0 "#PWR0107" H 7175 3175 50  0001 C CNN
+F 1 "GND" V 7180 3297 50  0000 R CNN
+F 2 "" H 7175 3425 50  0001 C CNN
+F 3 "" H 7175 3425 50  0001 C CNN
+	1    7175 3425
+	0    1    1    0   
+$EndComp
+Text Label 7175 3525 2    50   ~ 0
+E1_filtered
+$Comp
+L power:+3.3V #PWR0108
+U 1 1 5E3344F9
+P 7175 3625
+F 0 "#PWR0108" H 7175 3475 50  0001 C CNN
+F 1 "+3.3V" V 7190 3753 50  0000 L CNN
+F 2 "" H 7175 3625 50  0001 C CNN
+F 3 "" H 7175 3625 50  0001 C CNN
+	1    7175 3625
+	0    -1   -1   0   
+$EndComp
+Text Label 3400 3000 2    50   ~ 0
+E0_filtered
+Text Label 3400 2900 2    50   ~ 0
+E1_filtered
+$Comp
+L Device:R R1
+U 1 1 5E334832
+P 7025 2725
+F 0 "R1" V 6818 2725 50  0000 C CNN
+F 1 "2k" V 6909 2725 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 6955 2725 50  0001 C CNN
+F 3 "~" H 7025 2725 50  0001 C CNN
+	1    7025 2725
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:R R2
+U 1 1 5E3348E9
+P 7025 3325
+F 0 "R2" V 6818 3325 50  0000 C CNN
+F 1 "2k" V 6909 3325 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 6955 3325 50  0001 C CNN
+F 3 "~" H 7025 3325 50  0001 C CNN
+	1    7025 3325
+	0    1    1    0   
+$EndComp
+Text Label 6875 2725 2    50   ~ 0
+E0
+$EndSCHEMATC

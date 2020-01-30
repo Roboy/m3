@@ -19,7 +19,7 @@
 #include "esp_log.h"
 #include "esp_event_loop.h"
 
-#define OPTICAL_ENCODER_TIMEOUT 1
+#define OPTICAL_ENCODER_TIMEOUT 10
 static int64_t t0 = 0, t1 = 0, t0_E0 = 0, t1_E0 = 0, t0_E1 = 0, t1_E1 = 0;
 //#define MIRRORED
 #define DEFAULT_SETPOINT 10
