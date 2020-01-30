@@ -19,9 +19,10 @@
 #include "esp_log.h"
 #include "esp_event_loop.h"
 
-static int64_t t0 = 0, t1 = 0;
+#define OPTICAL_ENCODER_TIMEOUT 1
+static int64_t t0 = 0, t1 = 0, t0_E0 = 0, t1_E0 = 0, t0_E1 = 0, t1_E1 = 0;
 //#define MIRRORED
-#define DEFAULT_SETPOINT 500
+#define DEFAULT_SETPOINT 10
 static int id = 6;
 static int displacement_offset = 0;
 
@@ -202,7 +203,7 @@ static void status_task(void *pvParameters)
             pos_prev = status_frame.pos;
             t0_vel = t1_vel;
             vTaskDelay(200 / portTICK_PERIOD_MS);
-            ESP_LOGI("interrupt", "%d %d",E0,E1);
+            ESP_LOGI("displacement", "%d %d -> %d",E0,E1,status_frame.dis);
         }
 
         if (sock != -1) {
@@ -290,6 +291,10 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
 
 static void IRAM_ATTR gpio_isr_handler_E0(void* arg)
 {
+    t1_E0 = esp_timer_get_time();
+    if((t1_E0-t0_E0)<OPTICAL_ENCODER_TIMEOUT)
+      return;
+    t0_E0 = t1_E0;
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
     if(gpio_get_level(gpio_num)==0){
@@ -311,6 +316,10 @@ static void IRAM_ATTR gpio_isr_handler_E0(void* arg)
 
 static void IRAM_ATTR gpio_isr_handler_E1(void* arg)
 {
+    t1_E1 = esp_timer_get_time();
+    if((t1_E1-t0_E1)<OPTICAL_ENCODER_TIMEOUT)
+      return;
+    t0_E1 = t1_E1;
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
     if(gpio_get_level(gpio_num)==0){
