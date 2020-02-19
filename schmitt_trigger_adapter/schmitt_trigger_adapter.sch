@@ -1,4 +1,5 @@
 EESchema Schematic File Version 4
+LIBS:schmitt_trigger_adapter-cache
 EELAYER 26 0
 EELAYER END
 $Descr A4 11693 8268
@@ -137,7 +138,7 @@ F 3 "~" H 7375 3425 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 NoConn ~ 7175 3225
-Text Label 6875 3325 2    50   ~ 0
+Text Label 6300 3175 2    50   ~ 0
 E1
 $Comp
 L power:GND #PWR0107
@@ -170,25 +171,65 @@ E1_filtered
 $Comp
 L Device:R R1
 U 1 1 5E334832
-P 7025 2725
-F 0 "R1" V 6818 2725 50  0000 C CNN
-F 1 "2k" V 6909 2725 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 6955 2725 50  0001 C CNN
-F 3 "~" H 7025 2725 50  0001 C CNN
-	1    7025 2725
-	0    1    1    0   
+P 6425 2850
+F 0 "R1" V 6218 2850 50  0000 C CNN
+F 1 "2k" V 6309 2850 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 6355 2850 50  0001 C CNN
+F 3 "~" H 6425 2850 50  0001 C CNN
+	1    6425 2850
+	-1   0    0    1   
 $EndComp
 $Comp
 L Device:R R2
 U 1 1 5E3348E9
-P 7025 3325
-F 0 "R2" V 6818 3325 50  0000 C CNN
-F 1 "2k" V 6909 3325 50  0000 C CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 6955 3325 50  0001 C CNN
-F 3 "~" H 7025 3325 50  0001 C CNN
-	1    7025 3325
+P 6425 3325
+F 0 "R2" V 6218 3325 50  0000 C CNN
+F 1 "2k" V 6309 3325 50  0000 C CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 6355 3325 50  0001 C CNN
+F 3 "~" H 6425 3325 50  0001 C CNN
+	1    6425 3325
+	-1   0    0    1   
+$EndComp
+Text Label 6300 2700 2    50   ~ 0
+E0
+Wire Wire Line
+	6300 3175 6425 3175
+Wire Wire Line
+	7000 3175 7000 3325
+Wire Wire Line
+	7000 3325 7175 3325
+Connection ~ 6425 3175
+Wire Wire Line
+	6425 3175 7000 3175
+Wire Wire Line
+	6300 2700 6425 2700
+Wire Wire Line
+	7000 2700 7000 2725
+Wire Wire Line
+	7000 2725 7175 2725
+Connection ~ 6425 2700
+Wire Wire Line
+	6425 2700 7000 2700
+$Comp
+L power:GND #PWR?
+U 1 1 5E4D1D0C
+P 6425 3000
+F 0 "#PWR?" H 6425 2750 50  0001 C CNN
+F 1 "GND" V 6430 2872 50  0000 R CNN
+F 2 "" H 6425 3000 50  0001 C CNN
+F 3 "" H 6425 3000 50  0001 C CNN
+	1    6425 3000
 	0    1    1    0   
 $EndComp
-Text Label 6875 2725 2    50   ~ 0
-E0
+$Comp
+L power:GND #PWR?
+U 1 1 5E4D1D3F
+P 6425 3475
+F 0 "#PWR?" H 6425 3225 50  0001 C CNN
+F 1 "GND" V 6430 3347 50  0000 R CNN
+F 2 "" H 6425 3475 50  0001 C CNN
+F 3 "" H 6425 3475 50  0001 C CNN
+	1    6425 3475
+	0    1    1    0   
+$EndComp
 $EndSCHEMATC

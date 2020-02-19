@@ -23,7 +23,7 @@
 static int64_t t0 = 0, t1 = 0, t0_E0 = 0, t1_E0 = 0, t0_E1 = 0, t1_E1 = 0;
 //#define MIRRORED
 #define DEFAULT_SETPOINT 10
-static int id = 6;
+static int id = 0;
 static int displacement_offset = 0;
 
 static bool E0, E1;
@@ -203,7 +203,7 @@ static void status_task(void *pvParameters)
             pos_prev = status_frame.pos;
             t0_vel = t1_vel;
             vTaskDelay(200 / portTICK_PERIOD_MS);
-            ESP_LOGI("displacement", "%d %d -> %d",E0,E1,status_frame.dis);
+            // ESP_LOGI("displacement", "%d %d -> %d",E0,E1,status_frame.dis);
         }
 
         if (sock != -1) {
@@ -363,26 +363,12 @@ void servo_task(void *ignore) {
 
     esp_log_level_set("ledc", ESP_LOG_NONE);
 
-    //
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed);
-    ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-//    int pos = 0;
-//
-//    for(int i=0;i<32768;i+=10){
-//        ESP_LOGI("duty", "duty = %d", i);
-//        ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, i);
-//        ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-//        if(status_frame.pos==pos)
-//            vTaskDelay(pdMS_TO_TICKS(1000));
-//        else
-//            vTaskDelay(pdMS_TO_TICKS(100));
-//
-//        pos = status_frame.pos;
-//    }
-
     vTaskDelay(pdMS_TO_TICKS(1000));
+    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed);
 
-    control_frame.mode = 2;
+    command_frame.setpoint = 360;
+
+    control_frame.mode = 0;
     control_frame.Kp = 1;
     control_frame.Ki = 0;
     control_frame.Kd = 0;
@@ -537,18 +523,18 @@ void app_main()
     //hook isr handler for specific gpio pin
     gpio_isr_handler_add(4, gpio_isr_handler, (void*) 4);
 
-    gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
-    gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
+    // gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
+    // gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
 
-    wifi_init_sta();
+    // wifi_init_sta();
 //    xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
 //    printf("displacement_task started\n");
     xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
     printf("feedback360_task started\n");
-    xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
-    printf("status_task started\n");
-    xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
-    printf("command_task started\n");
+    // xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
+    // printf("status_task started\n");
+    // xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
+    // printf("command_task started\n");
     xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
     printf("servo_task started\n");
 }
