@@ -87,7 +87,7 @@
       (mirror false)
       (drillshape 0)
       (scaleselection 1)
-      (outputdirectory "m3_v2.3/"))
+      (outputdirectory "m3_v2.4/"))
   )
 
   (net 0 "")
@@ -421,6 +421,7 @@
   (module custom_lib:PTS815-SJK (layer F.Cu) (tedit 5DD7965A) (tstamp 5DD7E843)
     (at 124.3 122.9)
     (path /5CD5B563)
+    (attr smd)
     (fp_text reference SW2 (at -0.4 9.6 -180) (layer F.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)))
     )
@@ -589,6 +590,7 @@
   (module custom_lib:R1_ear_silk_5.5mm (layer F.Cu) (tedit 5A75A981) (tstamp 5DF294CB)
     (at 137.591601 128.366824 180)
     (path /5DDC1E70)
+    (attr smd)
     (fp_text reference H3 (at 0 0) (layer F.SilkS) hide
       (effects (font (size 1.524 1.524) (thickness 0.3)))
     )
@@ -625,6 +627,7 @@
   (module custom_lib:R1_eyes_mask_5.5mm (layer F.Cu) (tedit 5D5A8000) (tstamp 5DF294BB)
     (at 137.591601 128.366824 180)
     (path /5DDC2316)
+    (attr smd)
     (fp_text reference H4 (at 0 -2.54) (layer F.SilkS) hide
       (effects (font (size 1.524 1.524) (thickness 0.3)))
     )
@@ -692,6 +695,7 @@
   (module custom_lib:R1_face_mask_5.5mm (layer F.Cu) (tedit 5A75A9C8) (tstamp 5DF294A9)
     (at 137.591601 128.366824 180)
     (path /5DDC2626)
+    (attr smd)
     (fp_text reference H5 (at 0 0) (layer F.SilkS) hide
       (effects (font (size 1.524 1.524) (thickness 0.3)))
     )
@@ -988,6 +992,7 @@
   (module custom_lib:PTS815-SJK (layer F.Cu) (tedit 5E0E42DD) (tstamp 5E1A6EBF)
     (at 117.9 122.9)
     (path /5E0E6B99)
+    (attr smd)
     (fp_text reference SW1 (at -0.4 9.6) (layer F.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)))
     )
@@ -1080,6 +1085,7 @@
   (module custom_lib:SC70-5 (layer B.Cu) (tedit 5E60F8BB) (tstamp 5E6DB67F)
     (at 112 127.78073 90)
     (path /5E60E6DE)
+    (attr smd)
     (fp_text reference J1 (at 0.3 -0.2 90) (layer B.Fab)
       (effects (font (size 0.3 0.3) (thickness 0.075)) (justify mirror))
     )
@@ -1106,6 +1112,7 @@
   (module custom_lib:SC70-5 (layer B.Cu) (tedit 5E60F8D0) (tstamp 5E6D0B33)
     (at 112.00586 133.936753 90)
     (path /5E60FB1A)
+    (attr smd)
     (fp_text reference J2 (at 0.3 -0.2 90) (layer B.Fab)
       (effects (font (size 0.3 0.3) (thickness 0.075)) (justify mirror))
     )
@@ -1178,6 +1185,7 @@
   (module custom_lib:tcut1350x01 (layer B.Cu) (tedit 5DE66DF6) (tstamp 5E6D0827)
     (at 108 130.5 270)
     (path /5DE03A3E)
+    (attr smd)
     (fp_text reference J6 (at -0.06 7.69 270) (layer B.SilkS) hide
       (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
     )

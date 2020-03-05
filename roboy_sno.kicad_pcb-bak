@@ -1588,7 +1588,7 @@
   )
   (gr_line (start 133.64 123.14) (end 133.64 127.39) (layer B.SilkS) (width 0.2) (tstamp 5E1A68BD))
   (gr_line (start 132.36 125.81) (end 132.39 127.39) (layer B.SilkS) (width 0.2) (tstamp 5E1A68BC))
-  (gr_text myo_mini_muscle_v2.4 (at 123.3 140 180) (layer B.SilkS) (tstamp 5D0BCE6A)
+  (gr_text myo_mini_muscle_v2.4 (at 123.9 137.3 180) (layer B.SilkS) (tstamp 5D0BCE6A)
     (effects (font (size 1 1) (thickness 0.25)) (justify mirror))
   )
   (gr_text GND (at 104.2 124.8 90) (layer B.SilkS) (tstamp 5C61D88B)

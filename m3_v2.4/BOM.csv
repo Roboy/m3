@@ -1,0 +1,15 @@
+Id,Designator,Package,Quantity,Price per unit,Designation,Supplier and ref
+2,"U2,U2,U2,U2,U2,U2,U2,U2",MODULE_ESP-WROOM-02U,8,2.88 €,ESP-WROOM-02U,https://www.mouser.de/ProductDetail/Espressif-Systems/ESP-WROOM-02U?qs=sGAEpiMZZMu3sxpa5v1qrsMD9%252BwKyL2mXHmr1O9R8TQ%3D
+3,"C1,C1,C1,C1,C1,C1,C1,C2,C2,C2,C2,C2,C2,C2,C3,C3,C3,C3,C3,C3,C3,C5,C5,C5,C5,C5,C5,C5,C1,C2,C3,C5",C_0402_1005Metric,32,0.01 €,0.1uF,
+4,"R5,R5,R5,R5,R5,R5,R5,R6,R6,R6,R6,R6,R6,R6,R5,R6",R_0402_1005Metric,16,0.01 €,2k,
+5,"R3,R3,R3,R3,R3,R3,R3,R9,R9,R9,R9,R9,R9,R9,R8,R8,R8,R8,R8,R8,R8,R2,R2,R2,R2,R2,R2,R2,R1,R1,R1,R1,R1,R1,R1,R4,R4,R4,R4,R4,R4,R4,R1,R2,R3,R4,R8,R9",R_0402_1005Metric,48,0.01 €,10k,
+9,"U3,U3,U3,U3,U3,U3,U3,U3",DFN-6-1EP_3x3mm_P0.95mm_EP1.7x2.6mm,8,0.77 €,LD39200,https://www.mouser.de/ProductDetail/STMicroelectronics/LD39200PU33R?qs=sGAEpiMZZMsGz1a6aV8DcBSoZqFSANO3FkTJ%252Ba%2F9gX0%3D
+10,"U1,U1,U1,U1,U1,U1,U1,U1",ltc2855,8,2.46 €,LTC2855CDEPBF,https://www.mouser.de/ProductDetail/Analog-Devices-Linear-Technology/LTC2855CDEPBF?qs=sGAEpiMZZMuXae9YOZoWdwZKRtw0vP0LLcEh6PNrP%2Fu2LcrRYdx9hg%3D%3D
+12,"J1,J1,J1,J1,J1,J1,J1,J2,J2,J2,J2,J2,J2,J2,J1,J2",SC70-5,16,0.16 €,SCHMITT_TRIGGER,https://www.mouser.de/ProductDetail/595-SN74LVC1G17DCKR
+16,"C7,C7,C7,C7,C7,C7,C7,C6,C6,C6,C6,C6,C6,C6,C4,C4,C4,C4,C4,C4,C4,C4,C6,C7",C_0402_1005Metric,24,0.01 €,10uF,
+17,"R7,R7,R7,R7,R7,R7,R7,R7",R_0402_1005Metric,8,0.01 €,47,
+20,"SW1,SW1,SW1,SW1,SW1,SW1,SW1,SW1,SW2,SW2,SW2,SW2,SW2,SW2,SW2,SW2",PTS815-SJK,16,0.15 €,RESET,https://www.mouser.de/ProductDetail/CK/PTS815-SJK-250-SMTR-LFS?qs=%2Fha2pyFaduhoUoX%2F8M7M553bFKek%2F0kqRQun%252BNsVyDHiDBOfLAda2w%3D%3D
+21,"J6,J6,J6,J6,J6,J6,J6,J6",tcut1350x01,8,1.06 €,tcut1350,https://www.mouser.de/ProductDetail/Vishay-Semiconductors/TCUT1350X01?qs=%2Fha2pyFaduhwAQC6nxOwTG6HDrED7dIbt4bdeSbXocZGjqBq5BArag%3D%3D
+22,"D1,D1,D1,D1,D1,D1,D1,D1",LED_0402_1005Metric,8,0.22 €,LED,https://www.mouser.de/ProductDetail/Wurth-Elektronik/150040VS73240?qs=sGAEpiMZZMseGfSY3csMkdgyOOAg6kv2liN%252B9NLVRjlqcx%252Br00Z%252B%252Bw%3D%3D
+,,,total no parts:,total price:,,
+,,,200,63.70 €,,
