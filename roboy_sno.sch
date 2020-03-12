@@ -796,7 +796,7 @@ E1
 Text HLabel 1775 5750 0    50   Input ~ 0
 term_te
 $Comp
-L board-rescue:LTC2855CDEPBF-LTC2855CDEPBF-myo_shield_pcb-rescue U1
+L roboy_sno-rescue:LTC2855CDEPBF-LTC2855CDEPBF-myo_shield_pcb-rescue-board-rescue U1
 U 1 1 5D6E2053
 P 2200 5350
 AR Path="/5D6E2053" Ref="U1"  Part="1" 
@@ -880,12 +880,12 @@ $EndComp
 $Comp
 L power:GND #PWR0135
 U 1 1 5D8BC703
-P 2200 5450
-F 0 "#PWR0135" H 2200 5200 50  0001 C CNN
-F 1 "GND" V 2205 5322 50  0000 R CNN
-F 2 "" H 2200 5450 50  0001 C CNN
-F 3 "" H 2200 5450 50  0001 C CNN
-	1    2200 5450
+P 1275 5450
+F 0 "#PWR0135" H 1275 5200 50  0001 C CNN
+F 1 "GND" V 1280 5322 50  0000 R CNN
+F 2 "" H 1275 5450 50  0001 C CNN
+F 3 "" H 1275 5450 50  0001 C CNN
+	1    1275 5450
 	0    1    1    0   
 $EndComp
 $Comp
@@ -1077,4 +1077,17 @@ F 3 "~" H 5225 1175 50  0001 C CNN
 	1    5225 1175
 	1    0    0    -1  
 $EndComp
+$Comp
+L Jumper:SolderJumper_2_Bridged JP2
+U 1 1 5E6A93FA
+P 1425 5450
+F 0 "JP2" H 1425 5655 50  0000 C CNN
+F 1 "SolderJumper_2_Bridged" H 1425 5564 50  0000 C CNN
+F 2 "Jumper:SolderJumper-2_P1.3mm_Bridged_RoundedPad1.0x1.5mm" H 1425 5450 50  0001 C CNN
+F 3 "~" H 1425 5450 50  0001 C CNN
+	1    1425 5450
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2200 5450 1575 5450
 $EndSCHEMATC
