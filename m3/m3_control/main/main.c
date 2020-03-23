@@ -2,6 +2,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/queue.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
@@ -13,11 +14,17 @@
 #include "lwip/sys.h"
 #include <stdio.h>
 #include <driver/ledc.h>
+#include "driver/uart.h"
 #include "driver/gpio.h"
 #include "esp_timer.h"
 #include "sdkconfig.h"
 #include "esp_log.h"
 #include "esp_event_loop.h"
+
+// #define WIFI_CONTROL
+static const char *TAG = "m3 control";
+
+#define ID 128
 
 #define OPTICAL_ENCODER_TIMEOUT 10
 static int64_t t0 = 0, t1 = 0, t0_E0 = 0, t1_E0 = 0, t0_E1 = 0, t1_E1 = 0;
@@ -27,6 +34,20 @@ static int id = 0;
 static int displacement_offset = 0;
 
 static bool E0, E1;
+
+static xQueueHandle gpio_evt_queue = NULL;
+
+static int32_t Kp = 1;
+static int32_t Ki = 0;
+static int32_t Kd = 0;
+static uint8_t control_mode = 0;
+static int32_t setpoint = 0;
+static int32_t pos = 0;
+static int32_t vel = 0;
+static int32_t dis = 0;
+static int32_t pwm = 0;
+
+#ifdef WIFI_CONTROL
 
 struct{
     int32_t motor;
@@ -49,8 +70,6 @@ struct{
     int32_t Kd;
 }control_frame;
 
-static xQueueHandle gpio_evt_queue = NULL;
-
 #define HOST_IP_ADDR "192.168.255.255"
 #define PORT 8000
 
@@ -69,8 +88,6 @@ static EventGroupHandle_t s_wifi_event_group;
 /* The event group allows multiple bits for each event, but we only care about one event
  * - are we connected to the AP with an IP? */
 const int WIFI_CONNECTED_BIT = BIT0;
-
-static const char *TAG = "wifi station";
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t wifi_event_group;
@@ -279,6 +296,287 @@ void wifi_init_sta()
              EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
 }
 
+#else
+
+  #define EX_UART_NUM UART_NUM_0
+  #define BUF_SIZE (1024)
+  #define RD_BUF_SIZE (BUF_SIZE)
+  static QueueHandle_t uart0_queue;
+
+  #pragma pack(1)
+  /*
+   * The width of the CRC calculation and result.
+   * Modify the typedef for a 16 or 32-bit CRC standard.
+   */
+  typedef uint16_t crc;
+
+  #define WIDTH  (8 * sizeof(crc))
+  #define TOPBIT (1 << (WIDTH - 1))
+  #define POLYNOMIAL 0x8005
+
+  #define HEADER_LENGTH 4
+  #define MAX_FRAME_LENGTH 28
+
+  union StatusRequest{
+    struct __attribute__((packed)) {
+          uint32_t header;
+          uint8_t id;
+          uint16_t crc;
+      }values;
+      uint8_t data[7];
+  };
+
+  union M3Command{
+    struct __attribute__((packed)) {
+          uint32_t header;
+          uint8_t id;
+          int32_t setpoint;
+          uint16_t crc;
+      }values;
+      uint8_t data[11];
+  };
+
+  union M3ControlMode{
+    struct __attribute__((packed)) {
+          uint32_t header;
+          uint8_t id;
+          uint8_t control_mode;
+          uint16_t crc;
+      }values;
+      uint8_t data[8];
+  };
+
+  union M3StatusResponse{
+    struct __attribute__((packed)) {
+          uint32_t header;
+          uint8_t id;
+          uint8_t control_mode;
+          int32_t setpoint;
+          int32_t pos;
+          int32_t vel;
+          int32_t dis;
+          int32_t pwm;
+          uint16_t crc;
+      }values;
+      uint8_t data[28];
+  };
+
+  struct Frame{
+    union{
+      uint8_t bytes[4];
+      int32_t val;
+    }header;
+    uint length;
+    uint8_t data[MAX_FRAME_LENGTH];
+    uint frame_index;
+    bool active, dirty;
+    int type;
+    int counter;
+  };
+
+  struct Frame frames[3];
+  crc  crcTable[256];
+  static void crcInit(){
+    crc  remainder;
+    for (int dividend = 0; dividend < 256; ++dividend){
+        remainder = dividend << (WIDTH - 8);
+        for (uint8_t bit = 8; bit > 0; --bit){
+            if (remainder & TOPBIT){
+                remainder = (remainder << 1) ^ POLYNOMIAL;
+            }else{
+                remainder = (remainder << 1);
+            }
+        }
+        crcTable[dividend] = remainder;
+    }
+  }
+  static crc gen_crc16(const uint8_t *message, uint16_t nBytes){
+    uint8_t data;
+    crc remainder = 0xffff;
+    for (int byte = 0; byte < nBytes; ++byte)
+    {
+        data = message[byte] ^ (remainder >> (WIDTH - 8));
+        remainder = crcTable[data] ^ (remainder << 8);
+    }
+    return (remainder<<8|remainder>>8);
+  }
+
+  static void frameMatch(){
+    for(int i=0;i<3;i++){
+      if(frames[i].dirty){
+        if(frames[i].data[4]==ID){
+          crc crc_received = gen_crc16(&frames[i].data[HEADER_LENGTH],frames[i].length-HEADER_LENGTH-2);
+          if(crc_received==(frames[i].data[frames[i].length-1]<<8|frames[i].data[frames[i].length-2])){
+            switch(frames[i].type){
+              case 0: { // status_request
+                  #ifdef PRINTOUTS
+                  ESP_LOGI(TAG, );
+                  ESP_LOGI(TAG, "status_request %d received for id %d",frames[i].counter,frames[i].data[4]);
+                  #endif
+                  union M3StatusResponse msg;
+                  msg.values.header = 0x00D0BADA;
+                  msg.values.id = ID;
+                  msg.values.control_mode = control_mode;
+                  msg.values.setpoint = setpoint;
+                  msg.values.pos = pos;
+                  msg.values.vel = vel;
+                  msg.values.dis = dis;
+                  msg.values.pwm = pwm;
+                  msg.values.crc = gen_crc16(&msg.data[4],sizeof(msg)-HEADER_LENGTH-2);
+                  uart_write_bytes(EX_UART_NUM, (const char *) msg.data, sizeof(msg));
+                break;
+              }
+              case 1: { // hand_command
+                union M3Command msg;
+                memcpy(msg.data,frames[i].data,frames[i].length);
+                setpoint = msg.values.setpoint;
+                #ifdef PRINTOUTS
+                ESP_LOGI(TAG, "\thand_command %d received for id %d\tsetpoint %d",
+                  frames[i].counter,frames[i].data[4],msg.values.setpoint);
+                #endif
+
+                break;
+              }
+              case 2: { // hand_control_mode
+                union M3ControlMode msg;
+                memcpy(msg.data,frames[i].data,frames[i].length);
+                control_mode = msg.values.control_mode;
+                #ifdef PRINTOUTS
+                ESP_LOGI(TAG, "\thand_control_mode %d received for id %d \tcontrol_mode %d",
+                frames[i].counter,frames[i].data[4],msg.values.control_mode);
+                #endif
+                break;
+              }
+            }
+          }else{
+            #ifdef PRINTOUTS
+            ESP_LOGI(TAG, "crc error, calculated %x \t received %x",crc_received,(frames[i].data[frames[i].length-1]<<8|frames[i].data[frames[i].length-2]));
+            #endif
+          }
+        }
+//        #ifdef PRINTOUTS
+//        else{
+//          ESP_LOGI(TAG, "not for me, it's for ");
+//          SERIAL.println(frames[i].data[4]);
+//        }
+//        #endif
+        frames[i].dirty = false;
+      }
+    }
+  }
+
+  static void receive(uint8_t val){
+    for(int i=0;i<3;i++){
+      if(!frames[i].active){
+        if(val==frames[i].header.bytes[frames[i].frame_index]){
+//           ESP_LOGI(TAG, val,HEX);
+//           ESP_LOGI(TAG, " matches byte number ");
+//           SERIAL.println(frames[i].frame_index);
+          frames[i].frame_index++;
+          if(frames[i].frame_index==4){
+            frames[i].active = true;
+//             ESP_LOGI(TAG, frames[i].type);
+//             SERIAL.println(" frame matched");
+          }
+        }else{
+          frames[i].frame_index = 0;
+        }
+      }else{
+        if(frames[i].frame_index<frames[i].length-1){
+          frames[i].data[frames[i].frame_index] = val;
+          frames[i].frame_index++;
+        }else{
+          frames[i].data[frames[i].frame_index] = val;
+          frames[i].counter++;
+          frames[i].active = false;
+          frames[i].dirty = true;
+          frames[i].frame_index = 0;
+          frameMatch();
+        }
+      }
+    }
+  }
+
+  static void command_task(void *pvParameters)
+  {
+      uart_event_t event;
+      uint8_t *dtmp = (uint8_t *) malloc(RD_BUF_SIZE);
+
+      frames[0].type = 0;
+      frames[0].header.val = 0xBBCEE11C;
+      frames[0].length = 7;
+
+      frames[1].type = 1;
+      frames[1].header.val = 0xBEBAFECA;
+      frames[1].length = 11;
+
+      frames[2].type = 2;
+      frames[2].header.val = 0x0DD0FECA;
+      frames[2].length = 8;
+
+      crcInit();
+
+      for (;;) {
+          // Waiting for UART event.
+          if (xQueueReceive(uart0_queue, (void *)&event, (portTickType)portMAX_DELAY)) {
+              bzero(dtmp, RD_BUF_SIZE);
+              // ESP_LOGI(TAG, "uart[%d] event:", EX_UART_NUM);
+
+              switch (event.type) {
+                  // Event of UART receving data
+                  // We'd better handler data event fast, there would be much more data events than
+                  // other types of events. If we take too much time on data event, the queue might be full.
+                  case UART_DATA:
+                      uart_read_bytes(EX_UART_NUM, dtmp, event.size, portMAX_DELAY);
+                      for(int i=0;i<event.size;i++){
+                        receive(dtmp[i]);
+                      }
+                      break;
+
+                  // Event of HW FIFO overflow detected
+                  case UART_FIFO_OVF:
+                      ESP_LOGI(TAG, "hw fifo overflow");
+                      // If fifo overflow happened, you should consider adding flow control for your application.
+                      // The ISR has already reset the rx FIFO,
+                      // As an example, we directly flush the rx buffer here in order to read more data.
+                      uart_flush_input(EX_UART_NUM);
+                      xQueueReset(uart0_queue);
+                      break;
+
+                  // Event of UART ring buffer full
+                  case UART_BUFFER_FULL:
+                      ESP_LOGI(TAG, "ring buffer full");
+                      // If buffer full happened, you should consider encreasing your buffer size
+                      // As an example, we directly flush the rx buffer here in order to read more data.
+                      uart_flush_input(EX_UART_NUM);
+                      xQueueReset(uart0_queue);
+                      break;
+
+                  case UART_PARITY_ERR:
+                      ESP_LOGI(TAG, "uart parity error");
+                      break;
+
+                  // Event of UART frame error
+                  case UART_FRAME_ERR:
+                      ESP_LOGI(TAG, "uart frame error");
+                      break;
+
+                  // Others
+                  default:
+                      ESP_LOGI(TAG, "uart event type: %d", event.type);
+                      break;
+              }
+          }
+      }
+
+      free(dtmp);
+      dtmp = NULL;
+      vTaskDelete(NULL);
+  }
+
+#endif
+
+
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
     uint32_t gpio_num = (uint32_t) arg;
@@ -300,16 +598,16 @@ static void IRAM_ATTR gpio_isr_handler_E0(void* arg)
     if(gpio_get_level(gpio_num)==0){
         E0 = false;
         if(E1){
-          status_frame.dis++;
+          dis++;
         }else{
-          status_frame.dis--;
+          dis--;
         }
     }else{
         E0 = true;
         if(!E1){
-          status_frame.dis++;
+          dis++;
         }else{
-          status_frame.dis--;
+          dis--;
         }
     }
 }
@@ -325,16 +623,16 @@ static void IRAM_ATTR gpio_isr_handler_E1(void* arg)
     if(gpio_get_level(gpio_num)==0){
         E1 = false;
         if(!E0){
-          status_frame.dis++;
+          dis++;
         }else{
-          status_frame.dis--;
+          dis--;
         }
     }else{
         E1 = true;
         if(E0){
-          status_frame.dis++;
+          dis++;
         }else{
-          status_frame.dis--;
+          dis--;
         }
     }
 }
@@ -366,30 +664,30 @@ void servo_task(void *ignore) {
     vTaskDelay(pdMS_TO_TICKS(1000));
     ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed);
 
-    command_frame.setpoint = 360;
+    setpoint = 360;
 
-    control_frame.mode = 0;
-    control_frame.Kp = 1;
-    control_frame.Ki = 0;
-    control_frame.Kd = 0;
+    control_mode = 0;
+    Kp = 1;
+    Ki = 0;
+    Kd = 0;
 
-    status_frame.vel = 0;
+    vel = 0;
     float error_prev = 0;
     while(1) {
         float error, output;             // Control system variables
-        switch(control_frame.mode){
+        switch(control_mode){
             case 0:
-                error = status_frame.pos-command_frame.setpoint;         // Calculate error
+                error = pos-setpoint;         // Calculate error
                 break;
             case 1:
-                error = status_frame.vel-command_frame.setpoint;         // Calculate error
+                error = vel-setpoint;         // Calculate error
                 break;
             case 2:
-                if(command_frame.setpoint>=0) {
+                if(setpoint>=0) {
 #ifndef MIRRORED
-                    error = status_frame.dis - command_frame.setpoint;         // Calculate error
+                    error = dis - setpoint;         // Calculate error
 #else
-                    error = -(status_frame.dis - command_frame.setpoint);         // Calculate error
+                    error = -(dis - setpoint);         // Calculate error
 #endif
                 }else
                     error = 0;
@@ -398,7 +696,7 @@ void servo_task(void *ignore) {
                 error = 0;
         }
 
-        output = error * control_frame.Kp + (error-error_prev)*control_frame.Kd;                 // Calculate proportional
+        output = error * Kp + (error-error_prev)*Kd;                 // Calculate proportional
 
         if(output > 50)
             output = 50;            // Clamp output
@@ -406,7 +704,7 @@ void servo_task(void *ignore) {
             output = -50;
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-        status_frame.pwm = output;
+        pwm = output;
         vTaskDelay(pdMS_TO_TICKS(100));
         error_prev = error;
     } // End loop forever
@@ -435,7 +733,7 @@ void feedback360_task()                            // Cog keeps angle variable u
 
     int io_num = 4;
 
-    int pos = 0, pos_offset = 0;
+    int pos_tmp = 0, pos_offset = 0;
     bool first = true;
 
     while(1)                                    // Main loop for this cog
@@ -482,16 +780,16 @@ void feedback360_task()                            // Cog keeps angle variable u
         // Construct the angle measurement from the turns count and
         // current theta value.
         if(turns >= 0)
-            pos = (turns * unitsFC) + theta;
+            pos_tmp = (turns * unitsFC) + theta;
         else if(turns <  0)
-            pos = ((turns + 1) * unitsFC) - (unitsFC - theta);
+            pos_tmp = ((turns + 1) * unitsFC) - (unitsFC - theta);
 
         if(first){
             first = false;
-            pos_offset = pos;
-            status_frame.pos = 0;
+            pos_offset = pos_tmp;
+            pos = 0;
         }else{
-            status_frame.pos = pos-pos_offset;
+            pos = pos_tmp-pos_offset;
         }
 
 //        ESP_LOGD("timer", "angle = %d", status_frame.pos);
@@ -525,16 +823,32 @@ void app_main()
 
     // gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
     // gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
+    #ifdef WIFI_CONTROL
+    wifi_init_sta();
+    xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
+    printf("status_task started\n");
+    #else
+    // Configure parameters of an UART driver,
+    // communication pins and install the driver
+    uart_config_t uart_config = {
+        .baud_rate = 460800,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+    uart_param_config(EX_UART_NUM, &uart_config);
 
-    // wifi_init_sta();
-//    xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
+    // Install UART driver, and get the queue.
+    uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 100, &uart0_queue, 0);
+    #endif
+
+    // xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
 //    printf("displacement_task started\n");
     xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
     printf("feedback360_task started\n");
-    // xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
-    // printf("status_task started\n");
-    // xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
-    // printf("command_task started\n");
+    xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
+    printf("command_task started\n");
     xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
     printf("servo_task started\n");
 }
