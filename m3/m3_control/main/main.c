@@ -24,13 +24,11 @@
 // #define WIFI_CONTROL
 static const char *TAG = "m3 control";
 
-#define ID 128
+#define ID 130
 
-#define OPTICAL_ENCODER_TIMEOUT 10
-static int64_t t0 = 0, t1 = 0, t0_E0 = 0, t1_E0 = 0, t0_E1 = 0, t1_E1 = 0;
+static int64_t t0 = 0, t1 = 0;
 //#define MIRRORED
 #define DEFAULT_SETPOINT 10
-static int id = 0;
 static int displacement_offset = 0;
 
 static bool E0, E1;
@@ -315,7 +313,7 @@ void wifi_init_sta()
   #define POLYNOMIAL 0x8005
 
   #define HEADER_LENGTH 4
-  #define MAX_FRAME_LENGTH 28
+  #define MAX_FRAME_LENGTH 36
 
   union StatusRequest{
     struct __attribute__((packed)) {
@@ -341,9 +339,16 @@ void wifi_init_sta()
           uint32_t header;
           uint8_t id;
           uint8_t control_mode;
+          uint32_t setpoint;
+          uint32_t Kp;
+          uint32_t Ki;
+          uint32_t Kd;
+          uint32_t deadband;
+          uint32_t IntegralLimit;
+          uint32_t PWMLimit;
           uint16_t crc;
       }values;
-      uint8_t data[8];
+      uint8_t data[36];
   };
 
   union M3StatusResponse{
@@ -441,6 +446,10 @@ void wifi_init_sta()
                 union M3ControlMode msg;
                 memcpy(msg.data,frames[i].data,frames[i].length);
                 control_mode = msg.values.control_mode;
+                setpoint = msg.values.setpoint;
+                Kp = msg.values.Kp;
+                Ki = msg.values.Ki;
+                Kd = msg.values.Kd;
                 #ifdef PRINTOUTS
                 ESP_LOGI(TAG, "\thand_control_mode %d received for id %d \tcontrol_mode %d",
                 frames[i].counter,frames[i].data[4],msg.values.control_mode);
@@ -453,6 +462,8 @@ void wifi_init_sta()
             ESP_LOGI(TAG, "crc error, calculated %x \t received %x",crc_received,(frames[i].data[frames[i].length-1]<<8|frames[i].data[frames[i].length-2]));
             #endif
           }
+        }else{
+            gpio_set_level(GPIO_NUM_16,0);
         }
 //        #ifdef PRINTOUTS
 //        else{
@@ -491,6 +502,7 @@ void wifi_init_sta()
           frames[i].active = false;
           frames[i].dirty = true;
           frames[i].frame_index = 0;
+          gpio_set_level(GPIO_NUM_16,1);
           frameMatch();
         }
       }
@@ -512,7 +524,7 @@ void wifi_init_sta()
 
       frames[2].type = 2;
       frames[2].header.val = 0x0DD0FECA;
-      frames[2].length = 8;
+      frames[2].length = 36;
 
       crcInit();
 
@@ -587,12 +599,17 @@ static void IRAM_ATTR gpio_isr_handler(void* arg)
         t1 = esp_timer_get_time();
 }
 
+void displacement_task(void *ignore) {
+  while(1) {
+      printf("displacement %d\n", dis);
+      vTaskDelay(pdMS_TO_TICKS(100));
+  } // End loop forever
+
+  vTaskDelete(NULL);
+}
+
 static void IRAM_ATTR gpio_isr_handler_E0(void* arg)
 {
-    t1_E0 = esp_timer_get_time();
-    if((t1_E0-t0_E0)<OPTICAL_ENCODER_TIMEOUT)
-      return;
-    t0_E0 = t1_E0;
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
     if(gpio_get_level(gpio_num)==0){
@@ -614,10 +631,6 @@ static void IRAM_ATTR gpio_isr_handler_E0(void* arg)
 
 static void IRAM_ATTR gpio_isr_handler_E1(void* arg)
 {
-    t1_E1 = esp_timer_get_time();
-    if((t1_E1-t0_E1)<OPTICAL_ENCODER_TIMEOUT)
-      return;
-    t0_E1 = t1_E1;
     uint32_t gpio_num = (uint32_t) arg;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
     if(gpio_get_level(gpio_num)==0){
@@ -821,34 +834,46 @@ void app_main()
     //hook isr handler for specific gpio pin
     gpio_isr_handler_add(4, gpio_isr_handler, (void*) 4);
 
-    // gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
-    // gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
+    gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
+    gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
     #ifdef WIFI_CONTROL
-    wifi_init_sta();
-    xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
-    printf("status_task started\n");
+      wifi_init_sta();
+      xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
+      printf("status_task started\n");
     #else
-    // Configure parameters of an UART driver,
-    // communication pins and install the driver
-    uart_config_t uart_config = {
-        .baud_rate = 460800,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
-    };
-    uart_param_config(EX_UART_NUM, &uart_config);
+      //disable interrupt
+      io_conf.intr_type = GPIO_INTR_DISABLE;
+      //set as output mode
+      io_conf.mode = GPIO_MODE_OUTPUT;
+      //bit mask of the pins that you want to set,e.g.GPIO18/19
+      io_conf.pin_bit_mask = (1ULL<<16);
+      //disable pull-down mode
+      io_conf.pull_down_en = 0;
+      //disable pull-up mode
+      io_conf.pull_up_en = 0;
+      gpio_config(&io_conf);
+      gpio_set_level(GPIO_NUM_16,0);
+      // Configure parameters of an UART driver,
+      // communication pins and install the driver
+      uart_config_t uart_config = {
+          .baud_rate = 460800,
+          .data_bits = UART_DATA_8_BITS,
+          .parity = UART_PARITY_DISABLE,
+          .stop_bits = UART_STOP_BITS_1,
+          .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+      };
+      uart_param_config(EX_UART_NUM, &uart_config);
 
-    // Install UART driver, and get the queue.
-    uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 100, &uart0_queue, 0);
+      // Install UART driver, and get the queue.
+      uart_driver_install(EX_UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 100, &uart0_queue, 0);
     #endif
 
     // xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
-//    printf("displacement_task started\n");
-    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
-    printf("feedback360_task started\n");
+    // printf("displacement_task started\n");
     xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
     printf("command_task started\n");
+    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
+    printf("feedback360_task started\n");
     xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
     printf("servo_task started\n");
 }
