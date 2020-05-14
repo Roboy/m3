@@ -24,7 +24,7 @@
 // #define WIFI_CONTROL
 static const char *TAG = "m3 control";
 
-#define ID 130
+#define ID 133
 
 static int64_t t0 = 0, t1 = 0;
 //#define MIRRORED
@@ -447,9 +447,9 @@ void wifi_init_sta()
                 memcpy(msg.data,frames[i].data,frames[i].length);
                 control_mode = msg.values.control_mode;
                 setpoint = msg.values.setpoint;
-                Kp = msg.values.Kp;
-                Ki = msg.values.Ki;
-                Kd = msg.values.Kd;
+                Kp = msg.values.Kp/100.0f;
+                Ki = msg.values.Ki/100.0f;
+                Kd = msg.values.Kd/100.0f;
                 #ifdef PRINTOUTS
                 ESP_LOGI(TAG, "\thand_control_mode %d received for id %d \tcontrol_mode %d",
                 frames[i].counter,frames[i].data[4],msg.values.control_mode);
