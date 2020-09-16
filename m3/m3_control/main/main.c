@@ -24,22 +24,24 @@
 // #define WIFI_CONTROL
 static const char *TAG = "m3 control";
 
-#define ID 133
+#define ID 128
 
 static int64_t t0 = 0, t1 = 0;
-//#define MIRRORED
+#define MIRRORED
 #define DEFAULT_SETPOINT 10
-static int displacement_offset = 0;
 
 static bool E0, E1;
 
 static xQueueHandle gpio_evt_queue = NULL;
 
-static int32_t Kp = 1;
-static int32_t Ki = 0;
-static int32_t Kd = 0;
+static float Kp = 20;
+static float Ki = 0;
+static float Kd = 0;
+static float deadband = 0;
+static float IntegralLimit = 0;
+static float PWMLimit = 1600;
 static uint8_t control_mode = 0;
-static int32_t setpoint = 0;
+static float setpoint = 0;
 static int32_t pos = 0;
 static int32_t vel = 0;
 static int32_t dis = 0;
@@ -447,9 +449,12 @@ void wifi_init_sta()
                 memcpy(msg.data,frames[i].data,frames[i].length);
                 control_mode = msg.values.control_mode;
                 setpoint = msg.values.setpoint;
-                Kp = msg.values.Kp/100.0f;
-                Ki = msg.values.Ki/100.0f;
-                Kd = msg.values.Kd/100.0f;
+                Kp = msg.values.Kp/20.0f;
+                Ki = msg.values.Ki/20.0f;
+                Kd = msg.values.Kd/20.0f;
+                deadband = msg.values.deadband;
+                IntegralLimit = msg.values.IntegralLimit;
+                PWMLimit = msg.values.PWMLimit;
                 #ifdef PRINTOUTS
                 ESP_LOGI(TAG, "\thand_control_mode %d received for id %d \tcontrol_mode %d",
                 frames[i].counter,frames[i].data[4],msg.values.control_mode);
@@ -677,15 +682,12 @@ void servo_task(void *ignore) {
     vTaskDelay(pdMS_TO_TICKS(1000));
     ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed);
 
-    setpoint = 360;
+    setpoint = 0.03*1600;
 
-    control_mode = 0;
-    Kp = 1;
-    Ki = 0;
-    Kd = 0;
+    control_mode = 3;
 
     vel = 0;
-    float error_prev = 0;
+    float error_prev = 0, integral = 0;
     while(1) {
         float error, output;             // Control system variables
         switch(control_mode){
@@ -705,20 +707,29 @@ void servo_task(void *ignore) {
                 }else
                     error = 0;
                 break;
+            case 3:
+              error = 0;
+              output = setpoint/2;
+              break;
             default:
                 error = 0;
         }
+        integral += error;
+        if(integral>IntegralLimit)
+          integral = IntegralLimit;
+        if(integral<-IntegralLimit)
+          integral = -IntegralLimit;
+        if(control_mode!=3)
+          output = error * Kp + (error-error_prev)*Kd + Ki * integral;                 // Calculate PID result
 
-        output = error * Kp + (error-error_prev)*Kd;                 // Calculate proportional
-
-        if(output > 50)
-            output = 50;            // Clamp output
-        if(output < -50)
-            output = -50;
+        if(output > (PWMLimit/1600.0f*50))
+            output = PWMLimit/1600.0f*50;            // Clamp output
+        if(output < -(PWMLimit/1600.0f*50))
+            output = -PWMLimit/1600.0f*50;
         ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
         ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
         pwm = output;
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(50));
         error_prev = error;
     } // End loop forever
 
