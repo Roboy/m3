@@ -75,5 +75,5 @@ build/
 # Re-include the library files (mostly .a I think are in trouble with the above
 # gitignore definitions) for the xtensa-lx106-elf toolchain.
 
-m3/xtensa-lx106-elf/**
+!m3/xtensa-lx106-elf/**
 
