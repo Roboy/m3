@@ -1,0 +1,12 @@
+#Environment set-up file for M3 firmware development
+SRC_FILENAME=$(readlink -e $BASH_SOURCE)        #bash only, if on another shell use $_
+DEVEL_SPACE_ROOT=${SRC_FILENAME%/*}
+export PATH=$PATH:$DEVEL_SPACE_ROOT/xtensa-lx106-elf/bin:$DEVEL_SPACE_ROOT/ESP8266_RTOS_SDK/tools
+export IDF_PATH=$DEVEL_SPACE_ROOT/ESP8266_RTOS_SDK
+
+
+#idf.py build
+#idf.py -p /dev/ttyUSB0 flash
+#python -m pip install --user -r $IDF_PATH/requirements.txt
+#sudo apt-get install git wget libncurses-dev flex bison gperf python python-pip python-setuptools python-serial python-cryptography python-future python-pyparsing python-pyelftools cmake ninja-build ccache
+#download https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-80-g6c4433a-5.2.0.tar.gz
