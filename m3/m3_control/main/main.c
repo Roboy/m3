@@ -52,12 +52,12 @@ static bool E0, E1;
 
 static xQueueHandle gpio_evt_queue = NULL;
 
-static float Kp = 20;
-static float Ki = 0;
-static float Kd = 0;
+static float Kp = 1;
+static float Ki = 1;
+static float Kd = 1;
 static float deadband = 0;
 static uint32_t IntegralLimit = 0;
-static uint32_t PWM_LIMIT = PWM_MAX_RANGE >> 1;   // Half the max PWM range for now
+static uint32_t PWM_LIMIT = PWM_MAX_RANGE;
 static uint32_t PWMLimit = PWM_MAX_RANGE;
 static uint8_t control_mode = 0;
 static float setpoint = 0;
@@ -476,9 +476,9 @@ void wifi_init_sta()
                 memcpy(msg.data,frames[i].data,frames[i].length);
                 control_mode = msg.values.control_mode;
                 setpoint = msg.values.setpoint;
-                Kp = msg.values.Kp/20.0f;
-                Ki = msg.values.Ki/20.0f;
-                Kd = msg.values.Kd/20.0f;
+                Kp = msg.values.Kp;
+                Ki = msg.values.Ki;
+                Kd = msg.values.Kd;
                 deadband = msg.values.deadband;
                 IntegralLimit = msg.values.IntegralLimit;
                 PWMLimit = msg.values.PWMLimit;
@@ -732,7 +732,7 @@ void servo_task(void *ignore) {
     control_mode = 3;
     vel = 0;
     float error_prev = 0, integral = 0;
-    float error, output;             // Control system variables
+    float error = 0, output = 0;             // Control system variables
     
     xLastWakeTime = xTaskGetTickCount();
     
@@ -754,20 +754,23 @@ void servo_task(void *ignore) {
                 output = setpoint;
             default:
                 error = 0;
+                integral = 1;
         }
 
         integral += error;
-        if (integral>IntegralLimit)
-          integral = IntegralLimit;
-        if (integral<-IntegralLimit)
-          integral = -IntegralLimit;
-        if (control_mode!=3)
-          output = error * Kp + (error-error_prev)*Kd + Ki * integral;                 // Calculate PID result
 
-        if (output > PWM_LIMIT)
-            output = PWM_LIMIT;            // Clamp output
-        if (output < -(PWM_LIMIT))
-            output = -PWM_LIMIT;
+        if (integral >= (float) IntegralLimit)                                // Clamp integral
+          integral = IntegralLimit;
+        if (integral <= -((float) IntegralLimit))     // Damn if I know why the explicit cast is required
+          integral = -((float) IntegralLimit);        // Else everything overflows to hell!
+        
+        if (control_mode!=3)
+          output = error * Kp + (error-error_prev)*Kd + Ki * integral;        // Calculate PID result
+
+        if (output >= (float) PWM_LIMIT)                                      // Clamp output
+            output = PWM_LIMIT;            
+        if (output < -((float) PWM_LIMIT))
+            output = -((float) PWM_LIMIT);
 
         if (output == 0)
           duty = ZERO_SPEED;
@@ -780,9 +783,11 @@ void servo_task(void *ignore) {
         ESP_ERROR_CHECK( pwm_start() );
         
         pwm = duty;
+        vel = integral;
+        dis = output;
         error_prev = error;
 
-        vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(10) );   // Run task @ 100Hz, twice the servo update rate (50)
+        vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(100) );   // Run task @ 100Hz, twice the servo update rate (50)
     } // End of task loop
 
     vTaskDelete(NULL);
