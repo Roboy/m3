@@ -1,34 +1,52 @@
+#include <stdio.h>
 #include <string.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
+
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_timer.h"
+#include "esp_event_loop.h"
+
 #include "nvs_flash.h"
 #include "sys/socket.h"
-#include "sys/time.h"
+//#include "sys/time.h"
+
 #include "lwip/err.h"
 #include "lwip/sys.h"
-#include <stdio.h>
-#include <driver/ledc.h>
-#include "driver/uart.h"
+
 #include "driver/gpio.h"
-#include "esp_timer.h"
+#include "driver/pwm.h"
+#include "driver/uart.h"
+
 #include "sdkconfig.h"
-#include "esp_log.h"
-#include "esp_event_loop.h"
 
 // #define WIFI_CONTROL
 static const char *TAG = "m3 control";
 
 #define ID 128
 
-static int64_t t0 = 0, t1 = 0;
 #define MIRRORED
 #define DEFAULT_SETPOINT 10
+
+// PWM CONFIG
+#define N_PWM_PINS 1
+#define PWM_PERIOD 20000                // 50Hz -> 20k us
+#define PWM_MAX_DUTY PWM_PERIOD
+#define PWM_MAX_RANGE PWM_MAX_DUTY/100  // 200us/PWM_UNIT_TIME_RESOLUTION =
+                                        // = 200us/(20ms/PWM_MAX_DUTY)
+#define ZERO_SPEED 15*(PWM_MAX_DUTY/200)// 1500 us
+#define PWM_OFFSET PWM_MAX_DUTY/1000    // 20 us
+
+static const uint32_t pwm_pin = GPIO_NUM_5;
+static int16_t phase = 0;
+static uint32_t duty = ZERO_SPEED;
+
 
 static bool E0, E1;
 
@@ -38,8 +56,9 @@ static float Kp = 20;
 static float Ki = 0;
 static float Kd = 0;
 static float deadband = 0;
-static float IntegralLimit = 0;
-static float PWMLimit = 1600;
+static uint32_t IntegralLimit = 0;
+static uint32_t PWM_LIMIT = PWM_MAX_RANGE >> 1;   // Half the max PWM range for now
+static uint32_t PWMLimit = PWM_MAX_RANGE;
 static uint8_t control_mode = 0;
 static float setpoint = 0;
 static int32_t pos = 0;
@@ -47,6 +66,16 @@ static int32_t vel = 0;
 static int32_t dis = 0;
 static int32_t pwm = 0;
 
+/* Angle feedback task handle */
+static TaskHandle_t task_fb360_handle = NULL;
+
+#define FB360_PIN 4   // Pin for servo angle readout
+static volatile uint32_t fbtime_meas[3];
+static volatile bool fbtime_valid = 0;
+
+#define portYIELD_FROM_ISR() portYIELD()
+
+////////// SECTION ONLY RELEVANT FOR WIRELESS CONTROL ////////// 
 #ifdef WIFI_CONTROL
 
 struct{
@@ -81,9 +110,6 @@ struct{
 #define EXAMPLE_ESP_WIFI_SSID      "roboy"
 #define EXAMPLE_ESP_WIFI_PASS      "wiihackroboy"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  10
-
-/* FreeRTOS event group to signal when we are connected*/
-static EventGroupHandle_t s_wifi_event_group;
 
 /* The event group allows multiple bits for each event, but we only care about one event
  * - are we connected to the AP with an IP? */
@@ -297,13 +323,14 @@ void wifi_init_sta()
 }
 
 #else
+////////// END OF WI-FI ONLY SECTION //////////
 
   #define EX_UART_NUM UART_NUM_0
   #define BUF_SIZE (1024)
   #define RD_BUF_SIZE (BUF_SIZE)
   static QueueHandle_t uart0_queue;
 
-  #pragma pack(1)
+  #pragma pack(1) //TODO: convert to #pragma pack(push); #pragma pack(pop)
   /*
    * The width of the CRC calculation and result.
    * Modify the typedef for a 16 or 32-bit CRC standard.
@@ -341,7 +368,7 @@ void wifi_init_sta()
           uint32_t header;
           uint8_t id;
           uint8_t control_mode;
-          uint32_t setpoint;
+          int32_t setpoint;
           uint32_t Kp;
           uint32_t Ki;
           uint32_t Kd;
@@ -424,7 +451,7 @@ void wifi_init_sta()
                   msg.values.header = 0x00D0BADA;
                   msg.values.id = ID;
                   msg.values.control_mode = control_mode;
-                  msg.values.setpoint = setpoint;
+                  msg.values.setpoint = (int32_t) setpoint; //Could use some rounding like (set>0)?(set+0.5):(set-0.5)
                   msg.values.pos = pos;
                   msg.values.vel = vel;
                   msg.values.dis = dis;
@@ -596,12 +623,49 @@ void wifi_init_sta()
 
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
-    uint32_t gpio_num = (uint32_t) arg;
-    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-    if(gpio_get_level(gpio_num)==0)
-        t0 = esp_timer_get_time();
-    else
-        t1 = esp_timer_get_time();
+    uint32_t now = esp_timer_get_time();
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    static uint32_t count;
+    fbtime_valid = 0;         // Just for sanity checking afterwards
+
+    if (gpio_get_level(FB360_PIN) == 1) // If high, pulse started or
+    {                                   // cycle ended.
+      if (!(count == 0 || count == 2))  // Abort if something messed up
+      {                                 // our timing order.
+        fbtime_valid = 0;
+        count = 0;
+        return;
+      }
+      
+      fbtime_meas[count] = now;
+      if (count == 2)         // Notify our task when we have collected 3 measurements
+      {
+        
+        vTaskNotifyGiveFromISR( task_fb360_handle,
+                                &xHigherPriorityTaskWoken );
+        count = 0;
+        fbtime_valid = 1;
+      }
+
+      count++;
+    
+    } else {
+      
+      if (count != 1)
+      {
+        fbtime_valid = 0;
+        count = 0;
+        return;
+      }
+
+      fbtime_valid = 0;
+      fbtime_meas[0] = fbtime_meas[2];  // Make use of the last measurement for the new cycle
+      fbtime_meas[count] = now;
+      count++;
+    }
+
+    if (xHigherPriorityTaskWoken == pdTRUE)
+      portYIELD_FROM_ISR();
 }
 
 void displacement_task(void *ignore) {
@@ -656,132 +720,122 @@ static void IRAM_ATTR gpio_isr_handler_E1(void* arg)
 }
 
 void servo_task(void *ignore) {
-    int zeroSpeed       = 610;
-    ledc_timer_config_t ledc_timer = {
-            .duty_resolution = LEDC_TIMER_15_BIT, // resolution of PWM duty
-            .freq_hz = 50,                      // frequency of PWM signal
-            .speed_mode = LEDC_HIGH_SPEED_MODE,           // timer mode
-            .timer_num = LEDC_TIMER_0            // timer index
-    };
-    ledc_timer_config(&ledc_timer);
 
-    ledc_channel_config_t ledc_conf = {
-            .channel    = LEDC_CHANNEL_0,
-            .duty       = 0,
-            .gpio_num   = 5,
-            .speed_mode = LEDC_HIGH_SPEED_MODE,
-            .hpoint     = 0,
-            .timer_sel  = LEDC_TIMER_0
-    };
-    ledc_channel_config(&ledc_conf);
-
-    ledc_fade_func_install(0);
-
-    esp_log_level_set("ledc", ESP_LOG_NONE);
-
+    TickType_t xLastWakeTime; 
+    
     vTaskDelay(pdMS_TO_TICKS(1000));
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed);
 
-    setpoint = 0.03*1600;
+    ESP_ERROR_CHECK( pwm_set_duties(&duty) );
+    ESP_ERROR_CHECK( pwm_start() );
 
+    setpoint = 0;
     control_mode = 3;
-
     vel = 0;
     float error_prev = 0, integral = 0;
+    float error, output;             // Control system variables
+    
+    xLastWakeTime = xTaskGetTickCount();
+    
     while(1) {
-        float error, output;             // Control system variables
         switch(control_mode){
             case 0:
-                error = pos-setpoint;         // Calculate error
+                error = setpoint-pos;         // Calculate error
                 break;
             case 1:
-                error = vel-setpoint;         // Calculate error
+                error = setpoint-vel;         // Calculate error
                 break;
             case 2:
                 if(setpoint>=0) {
-#ifndef MIRRORED
-                    error = dis - setpoint;         // Calculate error
-#else
-                    error = -(dis - setpoint);         // Calculate error
-#endif
+                    error = setpoint-dis;         // Calculate error
                 }else
                     error = 0;
                 break;
             case 3:
-              error = 0;
-              output = setpoint/2;
-              break;
+                output = setpoint;
             default:
                 error = 0;
         }
+
         integral += error;
-        if(integral>IntegralLimit)
+        if (integral>IntegralLimit)
           integral = IntegralLimit;
-        if(integral<-IntegralLimit)
+        if (integral<-IntegralLimit)
           integral = -IntegralLimit;
-        if(control_mode!=3)
+        if (control_mode!=3)
           output = error * Kp + (error-error_prev)*Kd + Ki * integral;                 // Calculate PID result
 
-        if(output > (PWMLimit/1600.0f*50))
-            output = PWMLimit/1600.0f*50;            // Clamp output
-        if(output < -(PWMLimit/1600.0f*50))
-            output = -PWMLimit/1600.0f*50;
-        ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0, zeroSpeed+output);
-        ledc_update_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_0);
-        pwm = output;
-        vTaskDelay(pdMS_TO_TICKS(50));
+        if (output > PWM_LIMIT)
+            output = PWM_LIMIT;            // Clamp output
+        if (output < -(PWM_LIMIT))
+            output = -PWM_LIMIT;
+
+        if (output == 0)
+          duty = ZERO_SPEED;
+        else if ( output > 0 )
+          duty = ZERO_SPEED + PWM_OFFSET + output;
+        else
+          duty = ZERO_SPEED - PWM_OFFSET + output;
+
+        ESP_ERROR_CHECK( pwm_set_duties(&duty) );
+        ESP_ERROR_CHECK( pwm_start() );
+        
+        pwm = duty;
         error_prev = error;
-    } // End loop forever
+
+        vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(10) );   // Run task @ 100Hz, twice the servo update rate (50)
+    } // End of task loop
 
     vTaskDelete(NULL);
 }
 
-void feedback360_task()                            // Cog keeps angle variable updated
+void feedback360_task()                            // Keeps angle variable updated
 {
-    int unitsFC = 360;                          // Units in a full circle
-    int dutyScale = 1000;                       // Scale duty cycle to 1/1000ths
-    int dcMin = 29;                             // Minimum duty cycle
-    int dcMax = 971;                            // Maximum duty cycle
-    int q2min = unitsFC/4;                      // For checking if in 1st quadrant
-    int q3max = q2min * 3;                      // For checking if in 4th quadrant
-    int turns = 0;                              // For tracking turns
+    const int unitsFC = 360;                       // Units in a full circle
+    const int dutyScale = 1000;                    // Scale duty cycle to 1/1000ths
+    const int dcMin = 29;                          // Minimum duty cycle
+    const int dcMax = 971;                         // Maximum duty cycle
+    const int q2min = unitsFC/4;                   // For checking if in 1st quadrant
+    const int q3max = q2min * 3;                   // For checking if in 4th quadrant
+    const int cycle_period = 1100;
+
+    int turns = 0;                                 // For tracking turns
     // dc is duty cycle, theta is 0 to 359 angle, thetaP is theta from previous
     // loop repetition, tHigh and tLow are the high and low signal times for
     // duty cycle calculations.
-    int dc, theta, thetaP, tHigh = 1200, tLow = 0;
+    float dc = 0, theta = 0, thetaP = 0;
+    float tHigh = 0, tLow = 0, tCycle = 0;
 
-    // Calcualte initial duty cycle and angle.
-    dc = (dutyScale * tHigh) / (tHigh + tLow);
-    theta = (unitsFC - 1) - ((dc - dcMin) * unitsFC) / (dcMax - dcMin + 1);
-    thetaP = theta;
-
-    int io_num = 4;
 
     int pos_tmp = 0, pos_offset = 0;
     bool first = true;
 
-    while(1)                                    // Main loop for this cog
+    while(1)                                    // Main task loop
     {
-        int tHigh = 0, tLow = 0, tCycle = 0;
         while(1)                                  // Keep checking
         {
-            if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-                if(gpio_get_level(io_num)==0){
-                    tLow = abs(t1-t0);
-                }else{
-                    tHigh = abs(t0-t1);
-                }
-                if(tHigh!=0 && tLow!=0){
-                    tCycle = tHigh + tLow;
-                    if((tCycle > 1000) && (tCycle < 1200)) {  // If cycle time valid
-                        break;                                // break from loop
-                    }
-                }
-            }                            // break from loop
+            ulTaskNotifyTake( pdTRUE,           /* Clear notification value. */
+                              portMAX_DELAY );  /* Block indefinitely. */
+
+
+            if ( fbtime_valid == 0 )    // If not valid wait for next measurement
+            {
+              continue; 
+            }
+
+            tHigh = fbtime_meas[1] - fbtime_meas[0];
+            tLow  = fbtime_meas[2] - fbtime_meas[1];
+            
+            if(tHigh>0 && tLow>0){      // Should only go negative in case of a glitch or a timer overflow.
+               tCycle = tHigh + tLow;
+               if((tCycle > 1000) && (tCycle < 1200)) {  // If cycle time valid
+                   break;                                // break from loop
+               }
+            }
         }
+
         dc = (dutyScale * tHigh) / tCycle;        // Calculate duty cycle
 
-        // This gives a theta increasing int the
+        // This gives a theta increasing float in the
         // counterclockwise direction.
         theta = (unitsFC - 1) -                   // Calculate angle
                 ((dc - dcMin) * unitsFC)
@@ -803,10 +857,7 @@ void feedback360_task()                            // Cog keeps angle variable u
 
         // Construct the angle measurement from the turns count and
         // current theta value.
-        if(turns >= 0)
-            pos_tmp = (turns * unitsFC) + theta;
-        else if(turns <  0)
-            pos_tmp = ((turns + 1) * unitsFC) - (unitsFC - theta);
+        pos_tmp = (turns * unitsFC) + theta;
 
         if(first){
             first = false;
@@ -816,20 +867,22 @@ void feedback360_task()                            // Cog keeps angle variable u
             pos = pos_tmp-pos_offset;
         }
 
-//        ESP_LOGD("timer", "angle = %d", status_frame.pos);
-
         thetaP = theta;                           // Theta previous for next rep
     }
+
+    vTaskDelete( NULL );
 }
 
 void app_main()
 {
+    taskENTER_CRITICAL(); // Disable while we set up the system
+
     gpio_config_t io_conf;
-    //disable interrupt
+    //interrupt on every edge
     io_conf.intr_type = GPIO_INTR_ANYEDGE;
-    //set as output mode
+    //set as inputs
     io_conf.mode = GPIO_MODE_INPUT;
-    //bit mask of the pins that you want to set,e.g.GPIO18/19
+    //bit mask of the pins that we want to set
     io_conf.pin_bit_mask = (1ULL<<4|1ULL<<13|1ULL<<14);
     //disable pull-down mode
     io_conf.pull_down_en = 0;
@@ -847,16 +900,22 @@ void app_main()
 
     gpio_isr_handler_add(13, gpio_isr_handler_E0, (void*) 13);
     gpio_isr_handler_add(14, gpio_isr_handler_E1, (void*) 14);
+
     #ifdef WIFI_CONTROL
       wifi_init_sta();
       xTaskCreate(&status_task,"status_task",2048,NULL,5,NULL);
       printf("status_task started\n");
     #else
+      // Turn off radio
+      esp_wifi_disconnect();
+      esp_wifi_stop();
+      esp_wifi_deinit();
+
       //disable interrupt
       io_conf.intr_type = GPIO_INTR_DISABLE;
-      //set as output mode
+      //set as output
       io_conf.mode = GPIO_MODE_OUTPUT;
-      //bit mask of the pins that you want to set,e.g.GPIO18/19
+      //bit mask of the pins that we want to set
       io_conf.pin_bit_mask = (1ULL<<16);
       //disable pull-down mode
       io_conf.pull_down_en = 0;
@@ -864,6 +923,30 @@ void app_main()
       io_conf.pull_up_en = 0;
       gpio_config(&io_conf);
       gpio_set_level(GPIO_NUM_16,0);
+
+      // PWM Pin 5
+      io_conf.intr_type = GPIO_INTR_DISABLE;
+      io_conf.mode = GPIO_MODE_OUTPUT;
+      io_conf.pin_bit_mask = (BIT(pwm_pin));
+      io_conf.pull_down_en = 0;
+      io_conf.pull_up_en = 0;
+      gpio_config(&io_conf);
+      gpio_set_level(pwm_pin,0);
+
+      //Init PWM
+      pwm_init(PWM_PERIOD, &duty, N_PWM_PINS, &pwm_pin);
+      pwm_set_phases(&phase);
+
+      // Debug pin 12
+      io_conf.intr_type = GPIO_INTR_DISABLE;
+      io_conf.mode = GPIO_MODE_OUTPUT;
+      io_conf.pin_bit_mask = (GPIO_Pin_12);
+      io_conf.pull_down_en = 0;
+      io_conf.pull_up_en = 0;
+      gpio_config(&io_conf);
+      gpio_set_level(GPIO_NUM_12,0);
+      
+
       // Configure parameters of an UART driver,
       // communication pins and install the driver
       uart_config_t uart_config = {
@@ -881,10 +964,12 @@ void app_main()
 
     // xTaskCreate(&displacement_task,"displacement_task",2048,NULL,1,NULL);
     // printf("displacement_task started\n");
-    xTaskCreate(&command_task,"command_task",2048,NULL,3,NULL);
+    xTaskCreate(command_task,"command_task",2048,NULL,3,NULL);
     printf("command_task started\n");
-    xTaskCreate(&feedback360_task,"feedback360_task",2048,NULL,4,NULL);
+    xTaskCreate(feedback360_task,"feedback360_task",2048,NULL,4,&task_fb360_handle);
     printf("feedback360_task started\n");
-    xTaskCreate(&servo_task,"servo_task",2048,NULL,1,NULL);
+    xTaskCreate(servo_task,"servo_task",2048,NULL,1,NULL);
     printf("servo_task started\n");
+
+    taskEXIT_CRITICAL();    // Reenable interrupts
 }

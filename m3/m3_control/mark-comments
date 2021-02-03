@@ -1,0 +1,59 @@
+-- main.c
+a: Integral calculation is quite rough
+b: Angle feedback is all integer math
+d: declare t0 and t1 as volatile! Interrupt could modify values while task is using them.
+e: tCycle should maybe be a constant to increase immunity to noise.
+f: could be rewritten as (turns*unitsFC) + theta. Way clearer in my opinion.
+g: The feedback360 task has highest priority but it never blocks. Only when waiting for a queue item. Not sure if this is ok. It's kind of a miracle that the rest execute at all.
+Should use task notifications, since the gpio querying is also wrong. Could
+directly transmit the t0, t1 value.
+
+-- tmp comments
+
+dc = 1000
+theta = 359 - (-971*360)/943 = -11
+thetaP = -11
+
+(t1) = 0
+t0 = 1    | tLow_0 = 1
+t1 = 2    | tHigh_0 = 1
+t0 = 4    | tLow_1 = 2
+t1 = 7    | tHigh_1 = 3
+
+t0 = 0, t1 = 2000
+tLow = 0, tHigh = 2000.
+t0 = 2100, t1 = 2000
+tLow = 100, thigh = 2000
+
+
+
+Servo pwm limit is +-200.(1280-1480us,1520-1720us) and 0 from 1480-1520, 1500
+middle point.
+
+zeroSpeed = 610
+setpoint = 48
+
+For some reason the PWM for ledc seems to go from 0 to 8196. WTF!?
+
+20k us / 8196 = 2.44us
+2.44*610 = 1488 us, which is barely inside the zero region for the servo speed.
+
+- Feedback
+  Freq: 910 Hz -> ~1.1ms
+  2.9% to 97.1% duty: 31.9 to 1068.1 us
+
+-- ideas
+Better yet if they start pulling (positive direction) until the spring is
+compressed one or two ticks and then release, thus defining the default
+operation direction. Define initial task that deletes itself when done for this
+startup procedure.
+
+Overall problem with the creation of artificial resolution and wrong mappings. dcMin-Max limit duty resolution already, but then artificially increased by a factor of 1000, only to not be used later on since theta and therefore pos_tmp have only 1º resolution.
+
+What is going on with all of this inconsistent scaling throughout the icebus,
+plexus code? Multiplications by 1600 to cater to the iceboards, etc etc. Also
+more importantly, what is going on with all these float to int castings with
+complete disregard for the fractional part?
+
+Could store offset from zero position to NVS. As it is now turns are not
+accounted for.
