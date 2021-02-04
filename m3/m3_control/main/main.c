@@ -623,7 +623,7 @@ void wifi_init_sta()
 
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
-    uint32_t now = esp_timer_get_time();
+    int64_t now = esp_timer_get_time();
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     static uint32_t count;
     fbtime_valid = 0;         // Just for sanity checking afterwards
@@ -731,48 +731,77 @@ void servo_task(void *ignore) {
     setpoint = 0;
     control_mode = 3;
     vel = 0;
-    float error_prev = 0, integral = 0;
-    float error = 0, output = 0;             // Control system variables
+    bool use_pv_for_derivative = 1;
+    uint8_t control_mode_prev = 0;
+    float error_prev = 0, error = 0;
+    float derivative_filt = 0, derivative = 0;        // Control system variables
+    float pv = 0, pv_prev = 0;                        // Process variable
+    float output = 0, integral = 0;
+    float w = 0.4;                                    // Weight for derivative filtering 
     
+    int64_t loop_time_prev = 0;
+    uint32_t loop_dt = 0;
+    uint16_t default_T_loop = 10;           // Desired control loop period in ms
+                                            // Value of 10 runs task @ 100Hz, twice the servo update rate (50)
     xLastWakeTime = xTaskGetTickCount();
     
     while(1) {
-        switch(control_mode){
+        if (loop_time_prev > 0)                                 // Update our time variables
+          loop_dt = esp_timer_get_time() - loop_time_prev;
+        if (loop_dt <= 0)                                       // Take care of dt
+          loop_dt = default_T_loop*1000;                        // To us
+        loop_time_prev = esp_timer_get_time();                  // Store time
+
+        if (control_mode != control_mode_prev)                  // Handle on the fly control_mode change
+        {
+          error_prev = 0; integral = 0; derivative = 0; derivative_filt = 0; pv_prev = 0;
+        }
+        control_mode_prev = control_mode;
+
+        switch(control_mode){               // Calculate error
             case 0:
-                error = setpoint-pos;         // Calculate error
+                error = setpoint-pos;
+                pv = pos;
                 break;
             case 1:
-                error = setpoint-vel;         // Calculate error
+                error = setpoint-vel;         
+                pv = vel;
                 break;
             case 2:
+                pv = dis;
                 if(setpoint>=0) {
-                    error = setpoint-dis;         // Calculate error
+                    error = setpoint-dis;    
                 }else
                     error = 0;
                 break;
             case 3:
                 output = setpoint;
             default:
-                error = 0;
-                integral = 1;
+                error = 0; error_prev = 0; integral = 0; derivative = 0; derivative_filt = 0; pv = 0; pv_prev = 0;
         }
 
-        integral += error;
+        if (use_pv_for_derivative)
+          derivative = -(pv - pv_prev)/(loop_dt/1e4f);        // Scaled down by 100 to avoid output saturation
+        else
+          derivative = (error - error_prev)/(loop_dt/1e4f);
 
-        if (integral >= (float) IntegralLimit)                                // Clamp integral
+        derivative_filt = w*derivative + (1 - w)*derivative_filt;
+        integral += error*(loop_dt/1e6f);
+
+        if (integral >= (float) IntegralLimit)        // Clamp integral
           integral = IntegralLimit;
-        if (integral <= -((float) IntegralLimit))     // Damn if I know why the explicit cast is required
-          integral = -((float) IntegralLimit);        // Else everything overflows to hell!
+        if (integral <= -((float) IntegralLimit))     // Damn if I know why the explicit cast is required,
+          integral = -((float) IntegralLimit);        // else everything overflows to hell!
         
         if (control_mode!=3)
-          output = error * Kp + (error-error_prev)*Kd + Ki * integral;        // Calculate PID result
+          output = Kp*error + Kd*derivative_filt + Ki*integral;        // Calculate PID result
 
-        if (output >= (float) PWM_LIMIT)                                      // Clamp output
+        if (output >= (float) PWM_LIMIT)              // Clamp output
             output = PWM_LIMIT;            
         if (output < -((float) PWM_LIMIT))
             output = -((float) PWM_LIMIT);
 
-        if (output == 0)
+        if (output == 0)                              // Servo pwm specifics
           duty = ZERO_SPEED;
         else if ( output > 0 )
           duty = ZERO_SPEED + PWM_OFFSET + output;
@@ -783,11 +812,10 @@ void servo_task(void *ignore) {
         ESP_ERROR_CHECK( pwm_start() );
         
         pwm = duty;
-        vel = integral;
-        dis = output;
         error_prev = error;
+        pv_prev = pv;
 
-        vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(100) );   // Run task @ 100Hz, twice the servo update rate (50)
+        vTaskDelayUntil( &xLastWakeTime, pdMS_TO_TICKS(default_T_loop) );
     } // End of task loop
 
     vTaskDelete(NULL);
@@ -829,6 +857,7 @@ void feedback360_task()                            // Keeps angle variable updat
 
             tHigh = fbtime_meas[1] - fbtime_meas[0];
             tLow  = fbtime_meas[2] - fbtime_meas[1];
+            vel = tHigh;
             
             if(tHigh>0 && tLow>0){      // Should only go negative in case of a glitch or a timer overflow.
                tCycle = tHigh + tLow;
