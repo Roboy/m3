@@ -31,7 +31,7 @@ static const char *TAG = "m3 control";
 
 #define ID 128
 
-#define MIRRORED
+#define MIRRORED 0
 #define DEFAULT_SETPOINT 10
 
 // PWM CONFIG
@@ -63,7 +63,7 @@ static uint8_t control_mode = 0;
 static float setpoint = 0;
 static int32_t pos = 0;
 static int32_t vel = 0;
-static int32_t dis = 0;
+static volatile int32_t dis = 0;
 static int32_t pwm = 0;
 
 /* Angle feedback task handle */
@@ -733,16 +733,23 @@ void servo_task(void *ignore) {
     vel = 0;
     bool use_pv_for_derivative = 1;
     uint8_t control_mode_prev = 0;
-    float error_prev = 0, error = 0;
-    float derivative_filt = 0, derivative = 0;        // Control system variables
-    float pv = 0, pv_prev = 0;                        // Process variable
+    float pos_prev = 0;                               // For velocity computation
+    float vel_unfilt = 0;
+    float vel_filt = 0;
+    float a = 0.1;                                    // Weight for velocity filtering
+    float error_prev = 0, error = 0;                  // Control system variables
+    float derivative_filt = 0, derivative = 0;
     float output = 0, integral = 0;
+    float pv = 0, pv_prev = 0;                        // Process variable
     float w = 0.4;                                    // Weight for derivative filtering 
     
     int64_t loop_time_prev = 0;
     uint32_t loop_dt = 0;
     uint16_t default_T_loop = 10;           // Desired control loop period in ms
                                             // Value of 10 runs task @ 100Hz, twice the servo update rate (50)
+                                            // If changed please verify the
+                                            // scaling factors in the velocity
+                                            // and derivative calculations.
     xLastWakeTime = xTaskGetTickCount();
     
     while(1) {
@@ -758,6 +765,11 @@ void servo_task(void *ignore) {
         }
         control_mode_prev = control_mode;
 
+        vel_unfilt = (pos - pos_prev)/( ((float) loop_dt)/100000);    // In deg/s scaled by 10
+        vel_filt = a*vel_unfilt + (1 - a)*vel_filt;
+        vel = vel_filt;                                               // Here cast to int32
+        pos_prev = pos;
+
         switch(control_mode){               // Calculate error
             case 0:
                 error = setpoint-pos;
@@ -768,11 +780,12 @@ void servo_task(void *ignore) {
                 pv = vel;
                 break;
             case 2:
-                pv = dis;
                 if(setpoint>=0) {
                     error = setpoint-dis;    
+                    pv = dis;
                 }else
-                    error = 0;
+                    error = setpoint+dis;
+                    pv = -dis;
                 break;
             case 3:
                 output = setpoint;
@@ -781,7 +794,7 @@ void servo_task(void *ignore) {
         }
 
         if (use_pv_for_derivative)
-          derivative = -(pv - pv_prev)/(loop_dt/1e4f);        // Scaled down by 100 to avoid output saturation
+          derivative = -(pv - pv_prev)/(loop_dt/1e4f);        // Scaled down by 100 (loop freq) to avoid output saturation, and negative to produce the same effect the error does.
         else
           derivative = (error - error_prev)/(loop_dt/1e4f);
 
@@ -793,6 +806,14 @@ void servo_task(void *ignore) {
         if (integral <= -((float) IntegralLimit))     // Damn if I know why the explicit cast is required,
           integral = -((float) IntegralLimit);        // else everything overflows to hell!
         
+        if ( (!(MIRRORED) && (control_mode == 2) && (pos <= 0) && (error < 0)) || //Prevent infinite spooling in disp mode
+              (MIRRORED && (control_mode == 2) && (pos >= 0) && (error > 0)) )
+        {
+            error *= -1;
+            integral *= -1;
+            derivative_filt *= -1;
+        }
+
         if (control_mode!=3)
           output = Kp*error + Kd*derivative_filt + Ki*integral;        // Calculate PID result
 
@@ -838,6 +859,9 @@ void feedback360_task()                            // Keeps angle variable updat
     float dc = 0, theta = 0, thetaP = 0;
     float tHigh = 0, tLow = 0, tCycle = 0;
 
+    float pos_filt = 0;                             // Filtered position
+    float pos_unfilt = 0;
+    float w = 0.1;                                  // Filter weight
 
     int pos_tmp = 0, pos_offset = 0;
     bool first = true;
@@ -857,11 +881,10 @@ void feedback360_task()                            // Keeps angle variable updat
 
             tHigh = fbtime_meas[1] - fbtime_meas[0];
             tLow  = fbtime_meas[2] - fbtime_meas[1];
-            vel = tHigh;
             
             if(tHigh>0 && tLow>0){      // Should only go negative in case of a glitch or a timer overflow.
                tCycle = tHigh + tLow;
-               if((tCycle > 1000) && (tCycle < 1200)) {  // If cycle time valid
+               if((tCycle > 1090) && (tCycle < 1110)) {  // If cycle time valid
                    break;                                // break from loop
                }
             }
@@ -896,10 +919,13 @@ void feedback360_task()                            // Keeps angle variable updat
         if(first){
             first = false;
             pos_offset = pos_tmp;
-            pos = 0;
+            pos_unfilt = 0;
         }else{
-            pos = pos_tmp-pos_offset;
+            pos_unfilt = pos_tmp-pos_offset;
         }
+
+        pos_filt = w*pos_unfilt + (1 - w)*pos_filt;
+        pos = pos_filt;                           // Here cast to int32
 
         thetaP = theta;                           // Theta previous for next rep
     }
