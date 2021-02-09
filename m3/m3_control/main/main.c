@@ -780,12 +780,24 @@ void servo_task(void *ignore) {
                 pv = vel;
                 break;
             case 2:
-                if(setpoint>=0) {
+                if (!(MIRRORED)) 
+                {
+                  if (setpoint < 0)
+                  {
+                    error = 0; pv = 0; error_prev = 0; integral = 0; derivative = 0; derivative_filt = 0; pv_prev = 0;
+                  }else{
                     error = setpoint-dis;    
                     pv = dis;
-                }else
+                  }
+                }else{
+                  if (setpoint > 0)
+                  {
+                    error = 0; pv = 0; error_prev = 0; integral = 0; derivative = 0; derivative_filt = 0; pv_prev = 0;
+                  }else{
                     error = setpoint+dis;
                     pv = -dis;
+                  }
+                }
                 break;
             case 3:
                 output = setpoint;
