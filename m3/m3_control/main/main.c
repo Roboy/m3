@@ -58,7 +58,6 @@ static float Kd = 1;
 static float deadband = 0;
 static uint32_t IntegralLimit = 0;
 static uint32_t PWM_LIMIT = PWM_MAX_RANGE;
-static uint32_t PWMLimit = PWM_MAX_RANGE;
 static uint8_t control_mode = 0;
 static float setpoint = 0;
 static int32_t pos = 0;
@@ -481,7 +480,7 @@ void wifi_init_sta()
                 Kd = msg.values.Kd;
                 deadband = msg.values.deadband;
                 IntegralLimit = msg.values.IntegralLimit;
-                PWMLimit = msg.values.PWMLimit;
+                PWM_LIMIT = msg.values.PWMLimit;
                 #ifdef PRINTOUTS
                 ESP_LOGI(TAG, "\thand_control_mode %d received for id %d \tcontrol_mode %d",
                 frames[i].counter,frames[i].data[4],msg.values.control_mode);
