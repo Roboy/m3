@@ -817,14 +817,6 @@ void servo_task(void *ignore) {
         if (integral <= -((float) IntegralLimit))     // Damn if I know why the explicit cast is required,
           integral = -((float) IntegralLimit);        // else everything overflows to hell!
         
-        if ( (!(MIRRORED) && (control_mode == 2) && (pos <= 0) && (error < 0)) || //Prevent infinite spooling in disp mode
-              (MIRRORED && (control_mode == 2) && (pos >= 0) && (error > 0)) )
-        {
-            error *= -1;
-            integral *= -1;
-            derivative_filt *= -1;
-        }
-
         if (control_mode!=3)
           output = Kp*error + Kd*derivative_filt + Ki*integral;        // Calculate PID result
 
@@ -853,17 +845,17 @@ void servo_task(void *ignore) {
     vTaskDelete(NULL);
 }
 
-void feedback360_task()                            // Keeps angle variable updated
+void feedback360_task()                             // Keeps angle variable updated
 {
-    const int unitsFC = 360;                       // Units in a full circle
-    const int dutyScale = 1000;                    // Scale duty cycle to 1/1000ths
-    const int dcMin = 29;                          // Minimum duty cycle
-    const int dcMax = 971;                         // Maximum duty cycle
-    const int q2min = unitsFC/4;                   // For checking if in 1st quadrant
-    const int q3max = q2min * 3;                   // For checking if in 4th quadrant
-    const int cycle_period = 1100;
+    const int unitsFC = 360;                        // Units in a full circle
+    const int dutyScale = 1000;                     // Scale duty cycle to 1/1000ths
+    const int dcMin = 29;                           // Minimum duty cycle
+    const int dcMax = 971;                          // Maximum duty cycle
+    const int q2min = unitsFC/4;                    // For checking if in 1st quadrant
+    const int q3max = q2min * 3;                    // For checking if in 4th quadrant
+    const int cycle_period = 1100;                  // Cycle period in the servo manual
 
-    int turns = 0;                                 // For tracking turns
+    int turns = 0;                                  // For tracking turns
     // dc is duty cycle, theta is 0 to 359 angle, thetaP is theta from previous
     // loop repetition, tHigh and tLow are the high and low signal times for
     // duty cycle calculations.
