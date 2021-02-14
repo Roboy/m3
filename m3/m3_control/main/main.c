@@ -864,7 +864,7 @@ void feedback360_task()                             // Keeps angle variable upda
 
     float pos_filt = 0;                             // Filtered position
     float pos_unfilt = 0;
-    float w = 0.1;                                  // Filter weight
+    float w = 0.2;                                  // Filter weight
 
     int pos_tmp = 0, pos_offset = 0;
     bool first = true;
